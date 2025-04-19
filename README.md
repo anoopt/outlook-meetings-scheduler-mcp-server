@@ -45,6 +45,43 @@ It integrates seamlessly with other MCP servers, such as the GitHub MCP server, 
 
 ### Usage with VS Code
 
+#### Local Node.js
+
+You can run the MCP server directly with Node.js from your local build:
+
+1. Clone the repository and build the project:
+```bash
+git clone https://github.com/anoopt/outlook-meetings-scheduler-mcp-server.git
+cd outlook-meetings-scheduler-mcp-server
+npm install
+npm run build
+```
+
+2. For manual installation, add the following JSON block to your User Settings (JSON) file in VS Code. You can do this by pressing `Ctrl + Shift + P` and typing Preferences: `Open User Settings (JSON)`.
+
+Optionally, you can add it to a file called `.vscode/mcp.json` in your workspace. This will allow you to share the configuration with others:
+
+```json
+{
+  "mcpServers": {
+    "outlook-meetings-scheduler": {
+      "command": "node",
+      "args": [
+        "/path/to/outlook-meetings-scheduler-mcp-server/build/index.js"
+      ],
+      "env": {
+        "CLIENT_ID": "<YOUR_CLIENT_ID>",
+        "CLIENT_SECRET": "<YOUR_CLIENT_SECRET>",
+        "TENANT_ID": "<YOUR_TENANT_ID>",
+        "USER_EMAIL": "<YOUR_EMAIL>"
+      }
+    }
+  }
+}
+```
+
+Replace `/path/to/outlook-meetings-scheduler-mcp-server` with the absolute path to your cloned repository.
+
 #### Docker
 
 Run the MCP server using Docker locally. Build the Docker image with the following command: 
