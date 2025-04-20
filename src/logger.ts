@@ -1,10 +1,3 @@
-import { appendFileSync } from "fs";
-import { join } from "path";
-
-const LOG_FILE = join(
-  import.meta.dirname,
-  "mcp-server.log",
-);
 
 function formatMessage(
   level: string,
@@ -15,7 +8,7 @@ function formatMessage(
   const dataStr = data
     ? `\n${JSON.stringify(data, null, 2)}`
     : "";
-  return `[${timestamp}] [${level}] ${message}${dataStr}\n`;
+  return `[${timestamp}] [${level}] ${message}${dataStr}`;
 }
 
 export const logger = {
@@ -25,7 +18,7 @@ export const logger = {
       message,
       data,
     );
-    appendFileSync(LOG_FILE, logMessage);
+    console.log(logMessage);
   },
 
   error(message: string, error?: unknown) {
@@ -34,15 +27,6 @@ export const logger = {
       message,
       error,
     );
-    appendFileSync(LOG_FILE, logMessage);
+    console.error(logMessage);
   },
-
-  // debug(message: string, data?: unknown) {
-  //   const logMessage = formatMessage(
-  //     "DEBUG",
-  //     message,
-  //     data,
-  //   );
-  //   appendFileSync(LOG_FILE, logMessage);
-  // },
 };
