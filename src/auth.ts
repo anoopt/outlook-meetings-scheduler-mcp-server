@@ -1,4 +1,6 @@
 import { AuthenticationResult, ClientCredentialRequest, ConfidentialClientApplication, Configuration } from "@azure/msal-node";
+import { logger } from "./logger.js";
+
 export default class Auth {
     private config: Configuration;
     private cca: ConfidentialClientApplication;
@@ -15,7 +17,7 @@ export default class Auth {
     }
 
     async getAccessToken(): Promise<string | null> {
-        console.info("\u001b[93m⌛ Getting access token...");
+        logger.info("⌛ Getting access token...");
 
         try{
             const clientCredentialRequest: ClientCredentialRequest = {
@@ -24,11 +26,10 @@ export default class Auth {
             };
             const response: AuthenticationResult | null = await this.cca.acquireTokenByClientCredential(clientCredentialRequest);
             const accessToken: string | undefined = response?.accessToken;
-            console.info("\u001b[32m✅ Got access token");
+            logger.info("✅ Got access token");
             return accessToken || null;
         } catch (error) {
-            console.error("\u001b[91m🚨 Error in getAccessToken function.");
-            console.error(error);
+            logger.error("🚨 Error in getAccessToken function.", error);
             return null;
         }
     }

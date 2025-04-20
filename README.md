@@ -5,6 +5,13 @@ MCP Server for scheduling meetings in Microsoft Outlook using Microsoft Graph AP
 This MCP server allows you to create calendar events, create events with attendees (including finding their email addresses).
 It integrates seamlessly with other MCP servers, such as the GitHub MCP server, to enhance your workflow.
 
+## Sample queries
+
+- Schedule a meeting with Sarah for tomorrow at 3 PM.
+- Create a meeting called "Project Kickoff" for tomorrow at 2 PM. Add Megan and John as required attendees.
+
+### Usage with GitHub MCP Server
+- Create an issue in the organization/repo repository titled "Fix pagination bug in user dashboard" with the description "Users report seeing duplicate entries when navigating between pages." Then schedule a calendar reminder for me to review this issue tomorrow at 3 PM.
 
 ## Tools
 
@@ -34,6 +41,48 @@ It integrates seamlessly with other MCP servers, such as the GitHub MCP server, 
      - `location` (optional): Location of the event
      - `attendees`: Array of { email, name (optional), type (optional) }
    - Returns: Event details including URL, ID, and attendees list
+
+4. `get-event`
+   - Get details of a calendar event by its ID
+   - Input:
+     - `eventId` (string): ID of the event to retrieve
+   - Returns: Detailed event information including subject, time, attendees, and URL
+
+5. `list-events`
+   - List calendar events with optional filtering
+   - Inputs:
+     - `subject` (optional): Filter events by subject containing this text
+     - `startDate` (optional): Start date in ISO format (e.g., 2025-04-20T00:00:00) to filter events from
+     - `endDate` (optional): End date in ISO format (e.g., 2025-04-20T23:59:59) to filter events until
+     - `maxResults` (optional): Maximum number of events to return
+   - Returns: List of calendar events with basic information and IDs
+
+6. `delete-event`
+   - Delete a calendar event
+   - Input:
+     - `eventId` (string): ID of the event to delete
+   - Returns: Confirmation of event deletion
+
+7. `update-event`
+   - Update an existing calendar event
+   - Inputs:
+     - `eventId` (string): ID of the event to update
+     - `subject` (optional): New subject for the calendar event
+     - `body` (optional): New content/body for the calendar event
+     - `start` (optional): New start time in ISO format (e.g., 2025-04-20T12:00:00)
+     - `end` (optional): New end time in ISO format (e.g., 2025-04-20T13:00:00)
+     - `timeZone` (optional): New time zone for the event
+     - `location` (optional): New location for the event
+     - `attendees` (optional): Array of { email, name (optional), type (optional) }
+   - Returns: Updated event details showing changes
+
+8. `update-event-attendees`
+   - Add or remove attendees from a calendar event
+   - Inputs:
+     - `eventId` (string): ID of the event to update
+     - `addAttendees` (optional): Array of attendees to add: { email, name (optional), type (optional) }
+     - `removeAttendees` (optional): Array of email addresses to remove from the event
+   - Returns: Updated event attendee information
 
 ## Setup
 

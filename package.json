@@ -1,11 +1,12 @@
 {
   "name": "outlook-meetings-scheduler-mcp-server",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "MCP server for the Outlook Meetings Scheduler",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && chmod 755 build/index.js"
+    "build": "tsc && chmod 755 build/*.js"
   },
   "bin": {
     "outlook-meetings-scheduler": "./build/index.js"
