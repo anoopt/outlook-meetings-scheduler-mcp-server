@@ -190,7 +190,7 @@ Optionally, you can add it to a file called `.vscode/mcp.json` in your workspace
       "command": "npx",
       "args": [
         "-y",
-        "outlook-meetings-scheduler-mcp-server"
+        "outlook-meetings-scheduler"
       ],
       "env": {
         "CLIENT_ID": "<YOUR_CLIENT_ID>",
@@ -254,7 +254,7 @@ docker build -t mcp/outlook-meetings-scheduler .
       "command": "npx",
       "args": [
         "-y",
-        "outlook-meetings-scheduler-mcp-server"
+        "outlook-meetings-scheduler"
       ],
       "env": {
         "CLIENT_ID": "<YOUR_CLIENT_ID>",
@@ -302,7 +302,7 @@ To use both GitHub and Outlook MCP servers together :
       "command": "npx",
       "args": [
         "-y",
-        "outlook-meetings-scheduler-mcp-server"
+        "outlook-meetings-scheduler"
       ],
       "env": {
         "CLIENT_ID": "<YOUR_CLIENT_ID>",

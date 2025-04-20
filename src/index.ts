@@ -17,7 +17,7 @@ import { registerEventDeleteTools } from './tools/event-delete.js';
 
 // Create server instance
 const server = new McpServer({
-  name: "outlook-meetings-scheduler-mcp",
+  name: "outlook-meetings-scheduler",
   version: "0.1.1",
 });
 
