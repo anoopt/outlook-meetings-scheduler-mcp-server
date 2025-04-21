@@ -16,7 +16,7 @@ export default class Graph {
         const client: Client | null = await this.getClient();
 
         if (client) {
-            logger.info("⌛ Creating event...");
+            logger.progress("⌛ Creating event...");
             try {
                 const result: any = await client
                     .api(`/users/${userEmail}/calendar/events`)
@@ -40,7 +40,7 @@ export default class Graph {
         const client: Client | null = await this.getClient();
 
         if (client) {
-            logger.info(`⌛ Searching for people matching "${searchTerm}"...`);
+            logger.progress(`⌛ Searching for people matching "${searchTerm}"...`);
             try {
                 // Try the /people endpoint first as it's most likely to have recent contacts
                 const peopleResult = await client
@@ -81,7 +81,7 @@ export default class Graph {
         const client: Client | null = await this.getClient();
 
         if (client) {
-            logger.info(`⌛ Getting event with ID ${eventId}...`);
+            logger.progress(`⌛ Getting event with ID ${eventId}...`);
             try {
                 const result: any = await client
                     .api(`/users/${userEmail}/calendar/events/${eventId}`)
@@ -105,7 +105,7 @@ export default class Graph {
         const client: Client | null = await this.getClient();
 
         if (client) {
-            logger.info(`⌛ Updating event with ID ${eventId}...`);
+            logger.progress(`⌛ Updating event with ID ${eventId}...`);
             try {
                 const result: any = await client
                     .api(`/users/${userEmail}/calendar/events/${eventId}`)
@@ -129,7 +129,7 @@ export default class Graph {
         const client: Client | null = await this.getClient();
 
         if (client) {
-            logger.info(`⌛ Deleting event with ID ${eventId}...`);
+            logger.progress(`⌛ Deleting event with ID ${eventId}...`);
             try {
                 await client
                     .api(`/users/${userEmail}/calendar/events/${eventId}`)
@@ -149,7 +149,7 @@ export default class Graph {
         const client: Client | null = await this.getClient();
 
         if (client) {
-            logger.info("⌛ Listing calendar events...");
+            logger.progress("⌛ Listing calendar events...");
             try {
                 let request = client.api(`/users/${userEmail}/calendar/events`);
                 
@@ -189,7 +189,7 @@ export default class Graph {
     private async getClient(): Promise<Client | null> {
         const accessToken: string | null = await this.auth.getAccessToken();
         if (accessToken) {
-            logger.info("⌛ Getting Graph client...");
+            logger.progress("⌛ Getting Graph client...");
             const authProvider: AuthProvider = (done) => {
                 done(null, accessToken)
             };

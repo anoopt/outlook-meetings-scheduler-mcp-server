@@ -54,7 +54,7 @@ Found ${people.length} people matching "${name}":
 
 ${peopleList}
 
-You can use these email addresses to create a calendar event..`;
+You can use these email addresses to create a calendar event.`;
   
       return {
         content: [

@@ -17,7 +17,7 @@ export default class Auth {
     }
 
     async getAccessToken(): Promise<string | null> {
-        logger.info("⌛ Getting access token...");
+        logger.progress("⌛ Getting access token...");
 
         try{
             const clientCredentialRequest: ClientCredentialRequest = {

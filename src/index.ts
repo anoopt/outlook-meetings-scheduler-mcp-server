@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { logger } from './logger.js';
+import { logger, initializeLogger } from './logger.js';
 import { registerPeopleTools } from './tools/people.js';
 import { registerEventCreateTools } from './tools/event-create.js';
 import { registerEventReadTools } from './tools/event-read.js';
@@ -18,8 +18,15 @@ import { registerEventDeleteTools } from './tools/event-delete.js';
 // Create server instance
 const server = new McpServer({
   name: "outlook-meetings-scheduler",
-  version: "0.1.1",
+  version: "0.1.2",
+}, {
+  capabilities: {
+    logging: {}
+  }
 });
+
+// Initialize logger with server instance
+initializeLogger(server.server);
 
 // Register all tools
 registerPeopleTools(server);
