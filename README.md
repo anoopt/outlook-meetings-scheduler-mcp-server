@@ -5,6 +5,10 @@ MCP Server for scheduling meetings in Microsoft Outlook using Microsoft Graph AP
 This MCP server allows you to create calendar events, create events with attendees (including finding their email addresses).
 It integrates seamlessly with other MCP servers, such as the GitHub MCP server, to enhance your workflow.
 
+<a href="https://glama.ai/mcp/servers/@anoopt/outlook-meetings-scheduler-mcp-server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@anoopt/outlook-meetings-scheduler-mcp-server/badge" alt="Outlook Meetings Scheduler Server MCP server" />
+</a>
+
 ## Sample queries
 
 - Schedule a meeting with Sarah for tomorrow at 3 PM.
