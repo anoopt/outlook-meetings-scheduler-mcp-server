@@ -17,6 +17,9 @@ It integrates seamlessly with other MCP servers, such as the GitHub MCP server, 
 ### Usage with GitHub MCP Server
 - Create an issue in the organization/repo repository titled "Fix pagination bug in user dashboard" with the description "Users report seeing duplicate entries when navigating between pages." Then schedule a calendar reminder for me to review this issue tomorrow at 3 PM.
 
+## Demo
+![Demo](./assets/demo.gif)
+
 ## Tools
 
 1. `find-person`
