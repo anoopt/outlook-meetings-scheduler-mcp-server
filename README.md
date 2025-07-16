@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/anoopt-outlook-meetings-scheduler-mcp-server-badge.png)](https://mseep.ai/app/anoopt-outlook-meetings-scheduler-mcp-server)
+
 # Outlook Meetings Scheduler MCP Server
 
 MCP Server for scheduling meetings in Microsoft Outlook using Microsoft Graph API.
