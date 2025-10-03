@@ -1,16 +1,16 @@
 // import "isomorphic-fetch";
-import { AuthProvider, Client, Options } from "@microsoft/microsoft-graph-client";
+import { Client } from "@microsoft/microsoft-graph-client";
 import { Event } from "@microsoft/microsoft-graph-types";
-import Auth from "./auth.js";
+import { AuthManager } from "./auth.js";
 import { logger } from "./logger.js";
 
 export default class Graph {
 
-    private auth: Auth;
+    private authManager: AuthManager;
 
-    constructor(clientId: string, clientSecret: string, tenantId: string) {
-        this.auth = new Auth(clientId, clientSecret, tenantId);
-    };
+    constructor(authManager: AuthManager) {
+        this.authManager = authManager;
+    }
 
     async createEvent(event: Event, userEmail: string): Promise<any> {
         const client: Client | null = await this.getClient();
@@ -187,19 +187,18 @@ export default class Graph {
     };
 
     private async getClient(): Promise<Client | null> {
-        const accessToken: string | null = await this.auth.getAccessToken();
-        if (accessToken) {
+        try {
+            const authProvider = this.authManager.getGraphAuthProvider();
+            
             logger.progress("⌛ Getting Graph client...");
-            const authProvider: AuthProvider = (done) => {
-                done(null, accessToken)
-            };
-            const options: Options = {
-                authProvider
-            };
-            const client: Client = Client.init(options);
+            const client = Client.initWithMiddleware({
+                authProvider: authProvider
+            });
             logger.info("✅ Got Graph client");
             return client;
+        } catch (error) {
+            logger.error("🚨 Error getting Graph client", error);
+            return null;
         }
-        return null;
     };
 }

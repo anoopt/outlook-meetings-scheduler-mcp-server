@@ -1,6 +1,6 @@
 {
   "name": "outlook-meetings-scheduler",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "MCP server for the Outlook Meetings Scheduler",
   "main": "index.js",
   "type": "module",
@@ -18,14 +18,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@azure/msal-node": "^3.5.1",
+    "@azure/identity": "^4.12.0",
+    "@azure/identity-cache-persistence": "^1.2.0",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@modelcontextprotocol/sdk": "^1.10.1",
     "date-fns": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
     "zod": "^3.24.3"
   },
   "devDependencies": {
     "@microsoft/microsoft-graph-types": "^2.40.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.14.1",
     "typescript": "^5.8.3"
   }
