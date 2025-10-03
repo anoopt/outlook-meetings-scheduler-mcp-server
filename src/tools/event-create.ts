@@ -22,7 +22,13 @@ export function registerEventCreateTools(server: McpServer): void {
       timeZone: z.string().optional().describe("Time zone for the event. Defaults to GMT Standard Time"),
     },
     async ({ subject, body, start, end, timeZone = "GMT Standard Time" }) => {
-      const { graph, userEmail } = getGraphConfig();
+      const { graph, userEmail, authError } = await getGraphConfig();
+
+      if (authError) {
+        return {
+          content: [{ type: "text", text: `🔐 Authentication Required\n\n${authError}\n\nPlease complete the authentication and try again.` }]
+        };
+      }
   
       // Calculate default times if not provided
       const nextDay: string = format(addBusinessDays(new Date(), 1), 'yyyy-MM-dd');
@@ -107,7 +113,13 @@ Event URL: ${eventUrl}
       ).describe("List of attendees for the event")
     },
     async ({ subject, body, start, end, timeZone = "GMT Standard Time", location, attendees }) => {
-      const { graph, userEmail } = getGraphConfig();
+      const { graph, userEmail, authError } = await getGraphConfig();
+
+      if (authError) {
+        return {
+          content: [{ type: "text", text: `🔐 Authentication Required\n\n${authError}\n\nPlease complete the authentication and try again.` }]
+        };
+      }
   
       // Calculate default times if not provided
       const nextDay: string = format(addBusinessDays(new Date(), 1), 'yyyy-MM-dd');

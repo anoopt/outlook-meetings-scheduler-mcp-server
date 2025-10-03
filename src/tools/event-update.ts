@@ -31,7 +31,13 @@ export function registerEventUpdateTools(server: McpServer): void {
       ).optional().describe("List of attendees to add or update for the event"),
     },
     async ({ eventId, subject, body, start, end, timeZone, location, attendees }) => {
-      const { graph, userEmail } = getGraphConfig();
+      const { graph, userEmail, authError } = await getGraphConfig();
+
+      if (authError) {
+        return {
+          content: [{ type: "text", text: `🔐 Authentication Required\n\n${authError}\n\nPlease complete the authentication and try again.` }]
+        };
+      }
   
       // Create the event update object with only properties that should be updated
       const eventUpdates: Partial<Event> = {};
@@ -179,7 +185,13 @@ Event URL: ${eventUrl}
       ).optional().describe("List of email addresses to remove from the event"),
     },
     async ({ eventId, addAttendees, removeAttendees }) => {
-      const { graph, userEmail } = getGraphConfig();
+      const { graph, userEmail, authError } = await getGraphConfig();
+
+      if (authError) {
+        return {
+          content: [{ type: "text", text: `🔐 Authentication Required\n\n${authError}\n\nPlease complete the authentication and try again.` }]
+        };
+      }
   
       // First get the current event to get existing attendees
       const currentEvent = await graph.getEvent(eventId, userEmail);
