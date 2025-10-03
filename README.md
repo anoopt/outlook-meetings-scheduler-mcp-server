@@ -101,6 +101,7 @@ This MCP server supports three authentication modes:
 
 #### 1. Interactive (Delegated)
 Thank you [Lokka](https://lokka.dev/)
+
 Best for: User-impersonation scenarios, accessing user-specific data
 - Prompts user to login interactively
 - Uses delegated permissions
