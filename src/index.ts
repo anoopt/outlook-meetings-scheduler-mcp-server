@@ -129,14 +129,38 @@ async function startHttpServer(port: number) {
         // Reuse existing transport for this session
         transport = transports.get(sessionId);
         logger.info(`ℹ️ Reusing existing session: ${sessionId}`);
-      } else {
-        // No session ID or invalid/expired session ID - create new connection
-        // This allows seamless reconnection after server restarts
-        if (sessionId) {
-          logger.info(`ℹ️ Session ${sessionId} not found (server may have restarted) - creating new transport`);
-        } else {
-          logger.info(`ℹ️ New connection request (${req.method}) - creating transport`);
+      } else if (sessionId && typeof sessionId === 'string') {
+        // Session ID provided but not found (expired/invalid after server restart)
+        // For POST/DELETE: Client must reconnect with GET first
+        if (req.method !== 'GET') {
+          logger.info(`ℹ️ Session ${sessionId} not found, ${req.method} request rejected - client should reconnect with GET`);
+          return res.status(400).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32000,
+              message: 'Bad Request: Session expired or invalid. Please reconnect by sending a GET request to establish a new session.'
+            },
+            id: null
+          });
         }
+        // For GET with invalid session: create new session (fall through)
+        logger.info(`ℹ️ Session ${sessionId} not found (server may have restarted) - creating new session via GET`);
+      } else if (req.method !== 'GET') {
+        // No session ID and not a GET request
+        logger.info(`ℹ️ ${req.method} request without session ID - client should send GET first`);
+        return res.status(400).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: 'Bad Request: No session ID provided. Please establish a session first by sending a GET request.'
+          },
+          id: null
+        });
+      }
+
+      // Create new transport for GET requests without valid session
+      if (!transport) {
+        logger.info(`ℹ️ Establishing new session via GET request`);
         
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
