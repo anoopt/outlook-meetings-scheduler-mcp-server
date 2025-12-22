@@ -11,6 +11,7 @@ import { registerEventReadTools } from './tools/event-read.js';
 import { registerEventUpdateTools } from './tools/event-update.js';
 import { registerEventDeleteTools } from './tools/event-delete.js';
 import { registerUIEventTools } from './tools/event-ui.js';
+import { setupUIRoutes } from './routes/ui-routes.js';
 
 /**
  * Outlook Meetings Scheduler MCP Server
@@ -22,6 +23,16 @@ import { registerUIEventTools } from './tools/event-ui.js';
  * 1. stdio (default) - For traditional MCP clients like Claude Desktop
  * 2. HTTP/SSE - For web-based MCP clients like nanobot.ai (set HTTP_PORT environment variable)
  */
+
+// Global variable to store base URL for HTTP mode
+let serverBaseUrl: string | null = null;
+
+/**
+ * Get the server base URL (for HTTP mode)
+ */
+export function getServerBaseUrl(): string | null {
+  return serverBaseUrl;
+}
 
 /**
  * Create and configure an MCP server instance
@@ -64,10 +75,16 @@ async function startStdioServer() {
  * Start server in HTTP/SSE mode for web-based clients
  */
 async function startHttpServer(port: number) {
+  // Set the base URL for UI routes
+  serverBaseUrl = `http://localhost:${port}`;
+  
   const app = express();
   
   // Parse JSON bodies
   app.use(express.json());
+
+  // Setup UI routes for serving HTML pages
+  setupUIRoutes(app);
 
   // Store transports by session ID
   const transports = new Map<string, StreamableHTTPServerTransport>();
@@ -80,7 +97,8 @@ async function startHttpServer(port: number) {
       status: 'running',
       transport: 'streamable-http',
       endpoints: {
-        mcp: '/mcp'
+        mcp: '/mcp',
+        ui: '/ui'
       },
       tools: [
         'find-person',

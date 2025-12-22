@@ -4,7 +4,8 @@ import { registerTool } from "../utils/tool-registration.js";
 import { getGraphConfig } from "../utils/graph-config.js";
 import { createUIResource } from "@mcp-ui/server";
 import { DEFAULT_UPCOMING_MEETINGS_COUNT, UI_RESOURCE_URIS, PREFERRED_FRAME_SIZES } from "../constants/ui-constants.js";
-import { generateUpcomingMeetingsCarouselHTML } from "../utils/html/meetings-carousel.js";
+import { storeMeetingsData } from "../routes/ui-routes.js";
+import { getServerBaseUrl } from "../index.js";
 
 /**
  * Register UI-enhanced event tools with the MCP server
@@ -68,21 +69,40 @@ export function registerUIEventTools(server: McpServer): void {
         };
       }
 
-      // Generate HTML for the carousel
-      const htmlContent = generateUpcomingMeetingsCarouselHTML(meetings);
-
-      // Create UI resource using data URL with embedded HTML
-      // This avoids the need for a separate HTTP server
-      const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`;
-
-      const uiResource = createUIResource({
-        uri: UI_RESOURCE_URIS.UPCOMING_MEETINGS,
-        content: { type: "externalUrl", iframeUrl: dataUrl },
-        encoding: "text",
-        uiMetadata: {
-          "preferred-frame-size": PREFERRED_FRAME_SIZES.UPCOMING_MEETINGS,
-        },
-      });
+      // Get base URL for HTTP mode
+      const baseUrl = getServerBaseUrl();
+      
+      let uiResource;
+      
+      if (baseUrl) {
+        // HTTP mode - use external URL with actual HTTP endpoint
+        const dataId = storeMeetingsData(meetings);
+        const uiUrl = `${baseUrl}/ui/upcoming-meetings?id=${dataId}`;
+        
+        uiResource = createUIResource({
+          uri: UI_RESOURCE_URIS.UPCOMING_MEETINGS,
+          content: { type: "externalUrl", iframeUrl: uiUrl },
+          encoding: "text",
+          uiMetadata: {
+            "preferred-frame-size": PREFERRED_FRAME_SIZES.UPCOMING_MEETINGS,
+          },
+        });
+      } else {
+        // stdio mode - use data URL (fallback for non-HTTP environments)
+        // Note: This may not work in all UI clients
+        const { generateUpcomingMeetingsCarouselHTML } = await import("../utils/html/meetings-carousel.js");
+        const htmlContent = generateUpcomingMeetingsCarouselHTML(meetings);
+        const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`;
+        
+        uiResource = createUIResource({
+          uri: UI_RESOURCE_URIS.UPCOMING_MEETINGS,
+          content: { type: "externalUrl", iframeUrl: dataUrl },
+          encoding: "text",
+          uiMetadata: {
+            "preferred-frame-size": PREFERRED_FRAME_SIZES.UPCOMING_MEETINGS,
+          },
+        });
+      }
 
       // Also provide text summary
       const meetingsSummary = meetings.map((meeting: any, index: number) => {
