@@ -128,9 +128,10 @@ async function startHttpServer(port: number) {
       if (sessionId && typeof sessionId === 'string' && transports.has(sessionId)) {
         // Reuse existing transport for this session
         transport = transports.get(sessionId);
-      } else if (!sessionId && req.method === 'POST') {
-        // New session - create transport
-        logger.info("ℹ️ New HTTP/SSE connection - creating transport");
+        logger.info(`ℹ️ Reusing existing session: ${sessionId}`);
+      } else if (!sessionId && (req.method === 'POST' || req.method === 'GET')) {
+        // New session - create transport for POST (initialize) or GET (SSE stream) requests
+        logger.info(`ℹ️ New HTTP/SSE connection - creating transport (method: ${req.method})`);
         
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
@@ -152,6 +153,31 @@ async function startHttpServer(port: number) {
         };
 
         // Connect the transport to a new MCP server instance
+        const server = createServer();
+        await server.connect(transport);
+      } else if (sessionId && typeof sessionId === 'string' && !transports.has(sessionId)) {
+        // Session ID provided but not found - likely server restarted
+        // Create new session to allow reconnection
+        logger.info(`ℹ️ Session ${sessionId} not found (server may have restarted) - creating new session`);
+        
+        transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          onsessioninitialized: (sid) => {
+            logger.info(`ℹ️ New session initialized with ID: ${sid}`);
+            if (transport) {
+              transports.set(sid, transport);
+            }
+          }
+        });
+
+        transport.onclose = () => {
+          const sid = transport?.sessionId;
+          if (sid && transports.has(sid)) {
+            logger.info(`ℹ️ Transport closed for session ${sid}`);
+            transports.delete(sid);
+          }
+        };
+
         const server = createServer();
         await server.connect(transport);
       } else {
