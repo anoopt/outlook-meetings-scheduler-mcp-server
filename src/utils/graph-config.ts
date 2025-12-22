@@ -54,8 +54,8 @@ async function initializeAuth(): Promise<{ authManager: AuthManager; graph: Grap
   const clientSecret = process.env.CLIENT_SECRET || "";
   const tenantId = process.env.TENANT_ID || "";
   
-  // Detect if running in HTTP mode - browser auth won't work in containers/Codespaces
-  const isHttpMode = !!process.env.HTTP_PORT;
+  // Check if user explicitly wants device code flow (for containers/headless environments)
+  const preferDeviceCode = process.env.PREFER_DEVICE_CODE === 'true';
   
   // Create AuthManager based on mode
   let authManager: AuthManager;
@@ -73,15 +73,17 @@ async function initializeAuth(): Promise<{ authManager: AuthManager; graph: Grap
       
     case AuthMode.Interactive:
       logger.info("🔐 Initializing Interactive authentication");
-      if (isHttpMode) {
-        logger.info("📡 HTTP mode detected - using device code flow for better compatibility");
+      if (preferDeviceCode) {
+        logger.info("📡 PREFER_DEVICE_CODE=true - using device code flow");
+      } else {
+        logger.info("🌐 Using browser-based interactive authentication");
       }
       authManager = new AuthManager({
         mode: AuthMode.Interactive,
         clientId: clientId || undefined, // Use default if not provided
         tenantId: tenantId || undefined, // Use default if not provided
         redirectUri: process.env.REDIRECT_URI,
-        preferDeviceCode: isHttpMode // Use device code in HTTP mode (containers/Codespaces)
+        preferDeviceCode: preferDeviceCode // Only use device code if explicitly requested
       });
       break;
       

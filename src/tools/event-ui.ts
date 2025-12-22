@@ -15,7 +15,7 @@ export function registerUIEventTools(server: McpServer): void {
   registerTool(
     server,
     "show-upcoming-meetings",
-    "Show upcoming meetings in an interactive carousel UI. Displays the next 5 meetings by default.",
+    "Show upcoming meetings in an interactive UI. Displays the next 5 meetings by default.",
     {
       count: z.number().optional().describe("Number of upcoming meetings to show (default: 5, max: 10)"),
     },
@@ -116,7 +116,7 @@ export function registerUIEventTools(server: McpServer): void {
 
 ${meetingsSummary}
 
-View the interactive carousel above for more details about each meeting.
+View the interactive panel above for more details about each meeting.
       `.trim();
 
       return {

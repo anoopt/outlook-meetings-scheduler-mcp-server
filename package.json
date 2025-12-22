@@ -8,7 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && chmod 755 build/*.js",
     "dev": "HTTP_PORT=3000 tsx watch src/index.ts",
-    "dev:stdio": "tsx watch src/index.ts"
+    "dev:stdio": "tsx watch src/index.ts",
+    "dev:nanobot": "./scripts/dev-with-nanobot.sh"
   },
   "bin": {
     "outlook-meetings-scheduler": "./build/index.js"

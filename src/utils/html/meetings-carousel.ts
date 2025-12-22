@@ -136,113 +136,138 @@ export const getAvatarColor = (str: string): string => {
 };
 
 /**
- * Generate HTML for upcoming meetings using Microsoft Fabric Core design
- * Creates a document card list view matching Microsoft 365 styling
+ * Generate a single meeting card HTML
+ */
+const generateMeetingCard = (meeting: any): string => {
+  const subject = escapeHtml(meeting.subject || 'No Subject');
+  const startTime = meeting.start?.dateTime || '';
+  const endTime = meeting.end?.dateTime || '';
+  const location = escapeHtml(meeting.location?.displayName || '');
+  const organizer = escapeHtml(meeting.organizer?.emailAddress?.name || 'Unknown');
+  const organizerEmail = escapeHtml(meeting.organizer?.emailAddress?.address || '');
+  const attendeeCount = meeting.attendees?.length || 0;
+  const webLink = meeting.webLink || '';
+  const isOnline = meeting.isOnlineMeeting || false;
+  const onlineProvider = meeting.onlineMeetingProvider || '';
+  
+  const formattedDate = formatMeetingDate(startTime);
+  const duration = formatDuration(startTime, endTime);
+  const relativeTime = formatRelativeTime(startTime);
+  const initials = getInitials(organizer);
+  const avatarColor = getAvatarColor(organizerEmail || organizer);
+
+  // Determine meeting type icon and color
+  let meetingTypeIcon = 'Calendar';
+  let meetingTypeColor = '#0078d4';
+  let meetingTypeLabel = 'Meeting';
+  
+  if (isOnline || onlineProvider) {
+    if (onlineProvider?.toLowerCase().includes('teams')) {
+      meetingTypeIcon = 'TeamsLogo';
+      meetingTypeColor = '#6264a7';
+      meetingTypeLabel = 'Teams Meeting';
+    } else if (onlineProvider?.toLowerCase().includes('skype')) {
+      meetingTypeIcon = 'SkypeLogo';
+      meetingTypeColor = '#00aff0';
+      meetingTypeLabel = 'Skype Meeting';
+    } else {
+      meetingTypeIcon = 'Video';
+      meetingTypeColor = '#0078d4';
+      meetingTypeLabel = 'Online Meeting';
+    }
+  }
+  
+  return `
+    <div class="ms-DocumentCard">
+      <div class="ms-DocumentCard-preview" style="background-color: ${meetingTypeColor}">
+        <i class="ms-Icon ms-Icon--${meetingTypeIcon}" aria-hidden="true"></i>
+        <span class="preview-label">${meetingTypeLabel}</span>
+        <span class="duration-badge">${duration}</span>
+      </div>
+      <div class="ms-DocumentCard-details">
+        <div class="ms-DocumentCard-title" title="${subject}">${subject}</div>
+        <div class="ms-DocumentCard-activity">
+          <div class="activity-icon">
+            <i class="ms-Icon ms-Icon--DateTime" aria-hidden="true"></i>
+          </div>
+          <div class="activity-details">
+            <span class="activity-name">${formattedDate}</span>
+            <span class="activity-status">${relativeTime}</span>
+          </div>
+        </div>
+        ${location ? `
+        <div class="ms-DocumentCard-activity">
+          <div class="activity-icon">
+            <i class="ms-Icon ms-Icon--POI" aria-hidden="true"></i>
+          </div>
+          <div class="activity-details">
+            <span class="activity-name">${location}</span>
+          </div>
+        </div>
+        ` : ''}
+        ${attendeeCount > 0 ? `
+        <div class="ms-DocumentCard-activity">
+          <div class="activity-icon">
+            <i class="ms-Icon ms-Icon--People" aria-hidden="true"></i>
+          </div>
+          <div class="activity-details">
+            <span class="activity-name">${attendeeCount} attendee${attendeeCount !== 1 ? 's' : ''}</span>
+          </div>
+        </div>
+        ` : ''}
+      </div>
+      <div class="ms-DocumentCard-footer">
+        <div class="organizer-info">
+          <div class="ms-Persona">
+            <div class="ms-Persona-imageArea" style="background-color: ${avatarColor}">
+              <span class="ms-Persona-initials">${initials}</span>
+            </div>
+            <div class="ms-Persona-details">
+              <span class="ms-Persona-primaryText">${organizer}</span>
+              <span class="ms-Persona-secondaryText">Organizer</span>
+            </div>
+          </div>
+        </div>
+        ${webLink ? `
+        <button type="button" class="ms-Button ms-Button--primary copy-link" title="Copy link to clipboard" data-url="${escapeHtml(webLink)}">
+          <i class="ms-Icon ms-Icon--Link" aria-hidden="true"></i>
+          <span>Copy Link</span>
+        </button>
+        ` : ''}
+      </div>
+    </div>
+  `;
+};
+
+/**
+ * Generate HTML for upcoming meetings as a carousel with 2 cards per slide
+ * Creates a document card carousel view matching Microsoft 365 styling
  * @param meetings - Array of meeting objects
- * @returns Complete HTML page with meeting cards
+ * @returns Complete HTML page with meeting carousel
  */
 export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string => {
-  // Generate meeting cards
-  const meetingCards = meetings.map((meeting) => {
-    const subject = escapeHtml(meeting.subject || 'No Subject');
-    const startTime = meeting.start?.dateTime || '';
-    const endTime = meeting.end?.dateTime || '';
-    const location = escapeHtml(meeting.location?.displayName || '');
-    const organizer = escapeHtml(meeting.organizer?.emailAddress?.name || 'Unknown');
-    const organizerEmail = escapeHtml(meeting.organizer?.emailAddress?.address || '');
-    const attendeeCount = meeting.attendees?.length || 0;
-    const webLink = meeting.webLink || '';
-    const isOnline = meeting.isOnlineMeeting || false;
-    const onlineProvider = meeting.onlineMeetingProvider || '';
-    
-    const formattedDate = formatMeetingDate(startTime);
-    const duration = formatDuration(startTime, endTime);
-    const relativeTime = formatRelativeTime(startTime);
-    const initials = getInitials(organizer);
-    const avatarColor = getAvatarColor(organizerEmail || organizer);
+  // Group meetings into slides of 2
+  const slides: any[][] = [];
+  for (let i = 0; i < meetings.length; i += 2) {
+    slides.push(meetings.slice(i, i + 2));
+  }
 
-    // Determine meeting type icon and color
-    let meetingTypeIcon = 'Calendar';
-    let meetingTypeColor = '#0078d4';
-    let meetingTypeLabel = 'Meeting';
-    
-    if (isOnline || onlineProvider) {
-      if (onlineProvider?.toLowerCase().includes('teams')) {
-        meetingTypeIcon = 'TeamsLogo';
-        meetingTypeColor = '#6264a7';
-        meetingTypeLabel = 'Teams Meeting';
-      } else if (onlineProvider?.toLowerCase().includes('skype')) {
-        meetingTypeIcon = 'SkypeLogo';
-        meetingTypeColor = '#00aff0';
-        meetingTypeLabel = 'Skype Meeting';
-      } else {
-        meetingTypeIcon = 'Video';
-        meetingTypeColor = '#0078d4';
-        meetingTypeLabel = 'Online Meeting';
-      }
-    }
-    
+  // Generate slide HTML
+  const slidesHtml = slides.map((slideMeetings, slideIndex) => {
+    const cardsHtml = slideMeetings.map(meeting => generateMeetingCard(meeting)).join('');
     return `
-      <div class="ms-DocumentCard">
-        <div class="ms-DocumentCard-preview" style="background-color: ${meetingTypeColor}">
-          <i class="ms-Icon ms-Icon--${meetingTypeIcon}" aria-hidden="true"></i>
-          <span class="preview-label">${meetingTypeLabel}</span>
-          <span class="duration-badge">${duration}</span>
-        </div>
-        <div class="ms-DocumentCard-details">
-          <div class="ms-DocumentCard-title" title="${subject}">${subject}</div>
-          <div class="ms-DocumentCard-activity">
-            <div class="activity-icon">
-              <i class="ms-Icon ms-Icon--DateTime" aria-hidden="true"></i>
-            </div>
-            <div class="activity-details">
-              <span class="activity-name">${formattedDate}</span>
-              <span class="activity-status">${relativeTime}</span>
-            </div>
-          </div>
-          ${location ? `
-          <div class="ms-DocumentCard-activity">
-            <div class="activity-icon">
-              <i class="ms-Icon ms-Icon--POI" aria-hidden="true"></i>
-            </div>
-            <div class="activity-details">
-              <span class="activity-name">${location}</span>
-            </div>
-          </div>
-          ` : ''}
-          ${attendeeCount > 0 ? `
-          <div class="ms-DocumentCard-activity">
-            <div class="activity-icon">
-              <i class="ms-Icon ms-Icon--People" aria-hidden="true"></i>
-            </div>
-            <div class="activity-details">
-              <span class="activity-name">${attendeeCount} attendee${attendeeCount !== 1 ? 's' : ''}</span>
-            </div>
-          </div>
-          ` : ''}
-        </div>
-        <div class="ms-DocumentCard-footer">
-          <div class="organizer-info">
-            <div class="ms-Persona">
-              <div class="ms-Persona-imageArea" style="background-color: ${avatarColor}">
-                <span class="ms-Persona-initials">${initials}</span>
-              </div>
-              <div class="ms-Persona-details">
-                <span class="ms-Persona-primaryText">${organizer}</span>
-                <span class="ms-Persona-secondaryText">Organizer</span>
-              </div>
-            </div>
-          </div>
-          ${webLink ? `
-          <a href="${escapeHtml(webLink)}" target="_blank" class="ms-Button ms-Button--primary" title="Open in Outlook">
-            <i class="ms-Icon ms-Icon--OpenInNewWindow" aria-hidden="true"></i>
-            <span>Open</span>
-          </a>
-          ` : ''}
+      <div class="carousel-slide ${slideIndex === 0 ? 'active' : ''}" data-slide="${slideIndex}">
+        <div class="slide-cards">
+          ${cardsHtml}
         </div>
       </div>
     `;
   }).join('');
+
+  // Generate dot indicators
+  const dotsHtml = slides.map((_, slideIndex) => `
+    <button class="carousel-dot ${slideIndex === 0 ? 'active' : ''}" data-slide="${slideIndex}" aria-label="Go to slide ${slideIndex + 1}"></button>
+  `).join('');
 
   return `
 <!DOCTYPE html>
@@ -331,10 +356,110 @@ export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string =>
       margin: 4px 0 0;
     }
 
-    .cards-container {
+    /* Carousel styles */
+    .carousel-container {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .carousel-slide {
+      display: none;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .carousel-slide.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .slide-cards {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .slide-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Carousel navigation */
+    .carousel-nav {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .carousel-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--neutralQuaternary);
+      background-color: var(--white);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      box-shadow: var(--elevation4);
+    }
+
+    .carousel-btn:hover:not(:disabled) {
+      background-color: var(--themePrimary);
+      border-color: var(--themePrimary);
+      box-shadow: var(--elevation8);
+    }
+
+    .carousel-btn:hover:not(:disabled) .ms-Icon {
+      color: var(--white);
+    }
+
+    .carousel-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .carousel-btn .ms-Icon {
+      font-size: 16px;
+      color: var(--neutralPrimary);
+    }
+
+    .carousel-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .carousel-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: none;
+      background-color: var(--neutralQuaternary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .carousel-dot:hover {
+      background-color: var(--neutralTertiary);
+    }
+
+    .carousel-dot.active {
+      background-color: var(--themePrimary);
+      transform: scale(1.2);
+    }
+
+    .carousel-counter {
+      font-size: 14px;
+      color: var(--neutralSecondary);
+      min-width: 60px;
+      text-align: center;
     }
 
     .ms-DocumentCard {
@@ -574,10 +699,6 @@ export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string =>
         font-size: 24px;
       }
 
-      .cards-container {
-        grid-template-columns: 1fr;
-      }
-
       .ms-DocumentCard-footer {
         flex-direction: column;
         gap: 12px;
@@ -636,8 +757,23 @@ export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string =>
     </div>
 
     ${meetings.length > 0 ? `
-    <div class="cards-container">
-      ${meetingCards}
+    <div class="carousel-container">
+      ${slidesHtml}
+      
+      ${slides.length > 1 ? `
+      <div class="carousel-nav">
+        <button class="carousel-btn" id="prevBtn" aria-label="Previous slide">
+          <i class="ms-Icon ms-Icon--ChevronLeft" aria-hidden="true"></i>
+        </button>
+        <div class="carousel-dots">
+          ${dotsHtml}
+        </div>
+        <span class="carousel-counter"><span id="currentSlide">1</span> / ${slides.length}</span>
+        <button class="carousel-btn" id="nextBtn" aria-label="Next slide">
+          <i class="ms-Icon ms-Icon--ChevronRight" aria-hidden="true"></i>
+        </button>
+      </div>
+      ` : ''}
     </div>
     ` : `
     <div class="empty-state">
@@ -647,6 +783,145 @@ export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string =>
     </div>
     `}
   </div>
+
+  <script>
+    (function() {
+      var currentSlideIndex = 0;
+      var totalSlides = ${slides.length};
+      
+      function showSlide(index) {
+        if (index < 0 || index >= totalSlides) return;
+        
+        // Hide all slides
+        document.querySelectorAll('.carousel-slide').forEach(function(slide) {
+          slide.classList.remove('active');
+        });
+        
+        // Show target slide
+        var targetSlide = document.querySelector('.carousel-slide[data-slide="' + index + '"]');
+        if (targetSlide) {
+          targetSlide.classList.add('active');
+        }
+        
+        // Update dots
+        document.querySelectorAll('.carousel-dot').forEach(function(dot) {
+          dot.classList.remove('active');
+        });
+        var activeDot = document.querySelector('.carousel-dot[data-slide="' + index + '"]');
+        if (activeDot) {
+          activeDot.classList.add('active');
+        }
+        
+        // Update counter
+        var counter = document.getElementById('currentSlide');
+        if (counter) {
+          counter.textContent = (index + 1).toString();
+        }
+        
+        // Update button states
+        var prevBtn = document.getElementById('prevBtn');
+        var nextBtn = document.getElementById('nextBtn');
+        if (prevBtn) prevBtn.disabled = index === 0;
+        if (nextBtn) nextBtn.disabled = index === totalSlides - 1;
+        
+        currentSlideIndex = index;
+      }
+      
+      // Event listeners
+      var prevBtn = document.getElementById('prevBtn');
+      var nextBtn = document.getElementById('nextBtn');
+      
+      if (prevBtn) {
+        prevBtn.addEventListener('click', function() {
+          showSlide(currentSlideIndex - 1);
+        });
+      }
+      
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function() {
+          showSlide(currentSlideIndex + 1);
+        });
+      }
+      
+      // Dot navigation
+      document.querySelectorAll('.carousel-dot').forEach(function(dot) {
+        dot.addEventListener('click', function() {
+          var slideIndex = parseInt(this.getAttribute('data-slide'), 10);
+          showSlide(slideIndex);
+        });
+      });
+      
+      // Keyboard navigation
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft') {
+          showSlide(currentSlideIndex - 1);
+        } else if (e.key === 'ArrowRight') {
+          showSlide(currentSlideIndex + 1);
+        }
+      });
+      
+      // Initialize
+      showSlide(0);
+      
+      // Handle copy link button clicks
+      document.querySelectorAll('.copy-link').forEach(function(button) {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          var url = this.getAttribute('data-url');
+          var buttonSpan = this.querySelector('span');
+          var buttonIcon = this.querySelector('i');
+          var originalText = buttonSpan.textContent;
+          var originalIconClass = buttonIcon.className;
+          
+          // Try to copy to clipboard
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function() {
+              // Success - show feedback
+              buttonSpan.textContent = 'Copied!';
+              buttonIcon.className = 'ms-Icon ms-Icon--CheckMark';
+              
+              setTimeout(function() {
+                buttonSpan.textContent = originalText;
+                buttonIcon.className = originalIconClass;
+              }, 2000);
+            }).catch(function() {
+              // Clipboard API failed, try fallback
+              fallbackCopy(url, buttonSpan, buttonIcon, originalText, originalIconClass);
+            });
+          } else {
+            // Fallback for older browsers
+            fallbackCopy(url, buttonSpan, buttonIcon, originalText, originalIconClass);
+          }
+        });
+      });
+      
+      function fallbackCopy(text, buttonSpan, buttonIcon, originalText, originalIconClass) {
+        var textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          document.execCommand('copy');
+          buttonSpan.textContent = 'Copied!';
+          buttonIcon.className = 'ms-Icon ms-Icon--CheckMark';
+        } catch (err) {
+          buttonSpan.textContent = 'Failed';
+        }
+        
+        document.body.removeChild(textArea);
+        
+        setTimeout(function() {
+          buttonSpan.textContent = originalText;
+          buttonIcon.className = originalIconClass;
+        }, 2000);
+      }
+    })();
+  </script>
 </body>
 </html>
   `.trim();

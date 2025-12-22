@@ -170,6 +170,9 @@ export default class Graph {
                     request = request.top(10);
                 }
 
+                // Order by start date ascending to show upcoming meetings in chronological order
+                request = request.orderby('start/dateTime');
+
                 const result = await request.get();
 
                 if (result && result.value) {

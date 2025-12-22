@@ -54,12 +54,12 @@ HTTP_PORT=3000 node build/index.js
 
 > **⚠️ Authentication Mode Compatibility:**
 > - **stdio mode**: Supports all authentication modes (interactive, client_credentials, client_provided_token)
-> - **HTTP/SSE mode**: Only supports **non-interactive** authentication modes:
->   - ✅ `client_credentials` (recommended for HTTP mode)
+> - **HTTP/SSE mode**: 
+>   - ✅ `interactive` (browser-based authentication works when server runs locally)
+>   - ✅ `client_credentials` (recommended for containers/headless environments)
 >   - ✅ `client_provided_token`
->   - ❌ `interactive` (NOT compatible - device code flow requires user interaction)
 >
-> When using HTTP/SSE transport, you must configure `AUTH_MODE=client_credentials` or `client_provided_token` with appropriate credentials.
+> **Note:** When running in containers or headless environments where a browser cannot be opened, use `client_credentials` or set `PREFER_DEVICE_CODE=true` for device code flow.
 
 ## ✨ New: Interactive UI with mcp-ui
 
@@ -736,7 +736,7 @@ If you want to test with nanobot using GitHub Codespaces:
 
 The included `nanobot.yaml` file configures the Outlook Meetings Assistant agent with appropriate instructions and server connection settings.
 
-> **⚠️ Important for HTTP mode:** Interactive authentication (`AUTH_MODE=interactive`) does NOT work with HTTP/SSE transport. You must use `client_credentials` or `client_provided_token` authentication modes. See the Authentication Modes section for setup details.
+> **💡 Note for HTTP mode:** Interactive authentication works when the server runs locally (browser will open for login). For containers or headless environments, use `client_credentials` or `client_provided_token` authentication modes.
 
 **Note:** For production deployments, consider:
 - Using a reverse proxy (nginx, Caddy) with HTTPS
@@ -780,6 +780,7 @@ When `HTTP_PORT` is set, the server runs in HTTP/SSE mode for web-based clients.
 | `TENANT_ID` | Azure AD Tenant ID | No | `common` (multi-tenant) |
 | `USER_EMAIL` | Email address of the user | No | Auto-detected from signed-in user |
 | `REDIRECT_URI` | Custom redirect URI | No | `http://localhost` |
+| `PREFER_DEVICE_CODE` | Use device code flow instead of browser (for headless/container environments) | No | `false` |
 
 ### Client Credentials Mode
 
