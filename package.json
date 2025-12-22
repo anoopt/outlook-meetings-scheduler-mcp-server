@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && chmod 755 build/*.js"
+    "build": "tsc && chmod 755 build/*.js",
+    "dev": "npm run build && HTTP_PORT=3000 node build/index.js"
   },
   "bin": {
     "outlook-meetings-scheduler": "./build/index.js"
