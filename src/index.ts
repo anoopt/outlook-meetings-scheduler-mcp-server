@@ -7,6 +7,7 @@ import { registerEventCreateTools } from './tools/event-create.js';
 import { registerEventReadTools } from './tools/event-read.js';
 import { registerEventUpdateTools } from './tools/event-update.js';
 import { registerEventDeleteTools } from './tools/event-delete.js';
+import { registerUIEventTools } from './tools/event-ui.js';
 
 /**
  * Outlook Meetings Scheduler MCP Server
@@ -34,6 +35,7 @@ registerEventCreateTools(server);
 registerEventReadTools(server);
 registerEventUpdateTools(server);
 registerEventDeleteTools(server);
+registerUIEventTools(server);
 
 // Start the server
 async function main() {
