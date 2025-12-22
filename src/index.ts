@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import { logger, initializeLogger } from './logger.js';
 import { registerPeopleTools } from './tools/people.js';
 import { registerEventCreateTools } from './tools/event-create.js';
@@ -65,11 +66,11 @@ async function startStdioServer() {
 async function startHttpServer(port: number) {
   const app = express();
   
-  // Parse JSON bodies for message endpoint
+  // Parse JSON bodies
   app.use(express.json());
 
-  // Store active server instances by session
-  const serverSessions = new Map<string, McpServer>();
+  // Store transports by session ID
+  const transports = new Map<string, StreamableHTTPServerTransport>();
 
   // Health check endpoint
   app.get('/', (req, res) => {
@@ -77,7 +78,7 @@ async function startHttpServer(port: number) {
       name: 'Outlook Meetings Scheduler MCP Server',
       version: '0.2.0',
       status: 'running',
-      transport: 'sse',
+      transport: 'streamable-http',
       endpoints: {
         mcp: '/mcp'
       },
@@ -95,31 +96,81 @@ async function startHttpServer(port: number) {
     });
   });
 
-  // MCP SSE endpoint
-  app.get('/mcp', async (req, res) => {
-    logger.info("ℹ️ New SSE connection established");
-    
-    const server = createServer();
-    const transport = new SSEServerTransport('/message', res);
-    
-    // Store server instance for this connection
-    const sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    serverSessions.set(sessionId, server);
-    
-    // Clean up on connection close
-    res.on('close', () => {
-      logger.info("ℹ️ SSE connection closed");
-      serverSessions.delete(sessionId);
-    });
-    
-    await server.connect(transport);
-  });
+  // MCP endpoint - handles all HTTP methods (GET, POST, DELETE)
+  app.all('/mcp', async (req, res) => {
+    try {
+      // Check for existing session ID
+      const sessionId = req.headers['mcp-session-id'];
+      let transport: StreamableHTTPServerTransport | undefined;
 
-  // SSE message endpoint - currently handled by SSE transport internally
-  app.post('/message', async (req, res) => {
-    // Messages are handled by the SSE transport automatically
-    // This endpoint exists for SSE protocol compatibility
-    res.status(200).send();
+      if (sessionId && typeof sessionId === 'string' && transports.has(sessionId)) {
+        // Reuse existing transport for this session
+        transport = transports.get(sessionId);
+      } else if (!sessionId && req.method === 'POST') {
+        // New session - create transport
+        logger.info("ℹ️ New HTTP/SSE connection - creating transport");
+        
+        transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          onsessioninitialized: (sid) => {
+            logger.info(`ℹ️ Session initialized with ID: ${sid}`);
+            if (transport) {
+              transports.set(sid, transport);
+            }
+          }
+        });
+
+        // Set up onclose handler to clean up transport when closed
+        transport.onclose = () => {
+          const sid = transport?.sessionId;
+          if (sid && transports.has(sid)) {
+            logger.info(`ℹ️ Transport closed for session ${sid}`);
+            transports.delete(sid);
+          }
+        };
+
+        // Connect the transport to a new MCP server instance
+        const server = createServer();
+        await server.connect(transport);
+      } else {
+        // Invalid request
+        res.status(400).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: 'Bad Request: No valid session ID provided or invalid request'
+          },
+          id: null
+        });
+        return;
+      }
+
+      if (transport) {
+        // Handle the request with the transport
+        await transport.handleRequest(req, res, req.body);
+      } else {
+        res.status(400).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: 'Bad Request: Transport not found'
+          },
+          id: null
+        });
+      }
+    } catch (error) {
+      logger.error('Error handling MCP request:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32603,
+            message: 'Internal server error'
+          },
+          id: null
+        });
+      }
+    }
   });
 
   // Start HTTP server
