@@ -129,9 +129,9 @@ async function startHttpServer(port: number) {
         // Reuse existing transport for this session
         transport = transports.get(sessionId);
         logger.info(`ℹ️ Reusing existing session: ${sessionId}`);
-      } else if (!sessionId && (req.method === 'POST' || req.method === 'GET')) {
-        // New session - create transport for POST (initialize) or GET (SSE stream) requests
-        logger.info(`ℹ️ New HTTP/SSE connection - creating transport (method: ${req.method})`);
+      } else if (!sessionId && req.method === 'GET') {
+        // GET request without session ID - create new SSE connection
+        logger.info(`ℹ️ New SSE connection request - creating transport`);
         
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
@@ -156,37 +156,24 @@ async function startHttpServer(port: number) {
         const server = createServer();
         await server.connect(transport);
       } else if (sessionId && typeof sessionId === 'string' && !transports.has(sessionId)) {
-        // Session ID provided but not found - likely server restarted
-        // Create new session to allow reconnection
-        logger.info(`ℹ️ Session ${sessionId} not found (server may have restarted) - creating new session`);
-        
-        transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
-          onsessioninitialized: (sid) => {
-            logger.info(`ℹ️ New session initialized with ID: ${sid}`);
-            if (transport) {
-              transports.set(sid, transport);
-            }
-          }
+        // Session ID provided but not found - reject to force client to reconnect properly
+        logger.info(`ℹ️ Session ${sessionId} not found (server may have restarted) - rejecting request to force reconnection`);
+        res.status(410).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: 'Session expired. Please reconnect.'
+          },
+          id: null
         });
-
-        transport.onclose = () => {
-          const sid = transport?.sessionId;
-          if (sid && transports.has(sid)) {
-            logger.info(`ℹ️ Transport closed for session ${sid}`);
-            transports.delete(sid);
-          }
-        };
-
-        const server = createServer();
-        await server.connect(transport);
+        return;
       } else {
         // Invalid request
         res.status(400).json({
           jsonrpc: '2.0',
           error: {
             code: -32000,
-            message: 'Bad Request: No valid session ID provided or invalid request'
+            message: 'Bad Request: Invalid request - only GET requests without session ID are allowed for new connections'
           },
           id: null
         });
