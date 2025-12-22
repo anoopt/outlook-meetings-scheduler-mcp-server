@@ -22,6 +22,30 @@ It integrates seamlessly with other MCP servers, such as the GitHub MCP server, 
 ## Demo
 ![Demo](./assets/demo.gif)
 
+## Transport Modes
+
+This MCP server supports **two transport modes** to work with different types of clients:
+
+### 1. **stdio (Standard Input/Output)** - Default Mode
+For traditional MCP clients like Claude Desktop, VS Code, and other desktop applications.
+- ✅ **Default behavior** - No configuration needed
+- ✅ **Backward compatible** - Existing users unaffected
+- ✅ **Use case**: Local desktop AI assistants
+
+### 2. **HTTP/SSE (Server-Sent Events)** - Web Mode
+For web-based MCP clients like [nanobot.ai](https://nanobot.ai) and other HTTP-based integrations.
+- 🌐 **Enable by setting** `HTTP_PORT` environment variable
+- 🌐 **Access via**: `http://localhost:<PORT>/mcp`
+- 🌐 **Use case**: Web applications, cloud deployments, streaming connections
+
+**Example:**
+```bash
+# Start in HTTP mode on port 3000
+HTTP_PORT=3000 node build/index.js
+
+# Server will be available at http://localhost:3000/mcp
+```
+
 ## ✨ New: Interactive UI with mcp-ui
 
 This MCP server now features an interactive carousel UI powered by [mcp-ui](https://mcpui.dev) to display your upcoming meetings in a beautiful, easy-to-navigate interface.
@@ -649,7 +673,56 @@ The agenda is:
 4. Next steps
 ```
 
+## Usage with Web-Based Clients (HTTP Mode)
+
+### Using with nanobot.ai
+
+[nanobot.ai](https://nanobot.ai) is a web-based AI assistant that supports MCP servers via HTTP/SSE transport.
+
+**Setup Instructions:**
+
+1. Start the MCP server in HTTP mode:
+   ```bash
+   # Using Node.js locally
+   HTTP_PORT=3000 node build/index.js
+   
+   # Or using npx
+   HTTP_PORT=3000 npx outlook-meetings-scheduler
+   ```
+
+2. Configure nanobot.ai to connect to your server:
+   - Server URL: `http://localhost:3000/mcp`
+   - Transport: SSE (Server-Sent Events)
+
+3. Set up authentication environment variables as needed (see Authentication Modes section)
+
+**Note:** For production deployments, consider:
+- Using a reverse proxy (nginx, Caddy) with HTTPS
+- Deploying to a cloud platform (Heroku, Railway, Fly.io)
+- Setting appropriate CORS headers if needed
+
+### Using with Other HTTP MCP Clients
+
+Any MCP client that supports HTTP/SSE transport can connect to this server:
+
+```bash
+# Start server on custom port
+HTTP_PORT=8080 AUTH_MODE=interactive node build/index.js
+
+# Server endpoints:
+# - Health check: http://localhost:8080/
+# - MCP endpoint: http://localhost:8080/mcp
+```
+
 ## Environment Variables
+
+### Transport Configuration
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `HTTP_PORT` | Enable HTTP/SSE mode and set port number (e.g., 3000) | No | Not set (uses stdio) |
+
+When `HTTP_PORT` is set, the server runs in HTTP/SSE mode for web-based clients. When not set, the server runs in stdio mode for desktop clients.
 
 ### Interactive Mode (Default)
 
