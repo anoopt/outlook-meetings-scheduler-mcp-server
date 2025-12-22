@@ -32,20 +32,18 @@ mcpServers:
     # For local development with HTTP mode:
     url: http://localhost:3000/mcp
     
+    # IMPORTANT: HTTP/SSE mode requires non-interactive authentication
+    # Use client_credentials mode instead of interactive mode
+    # Set these environment variables before starting the server:
+    env:
+      AUTH_MODE: client_credentials
+      CLIENT_ID: your-client-id
+      CLIENT_SECRET: your-client-secret
+      TENANT_ID: your-tenant-id
+      USER_EMAIL: your-email@example.com
+      HTTP_PORT: "3000"
+    
     # Configuration notes:
-    # - Start the server with: HTTP_PORT=3000 node build/index.js
-    # - Set up authentication environment variables as needed
-    # - See README.md for authentication modes and setup instructions
-    
-    # Environment variables for authentication (examples):
-    # For interactive mode (default):
-    #   AUTH_MODE: interactive
-    #   CLIENT_ID: your-client-id (optional, uses built-in multi-tenant app if not set)
-    #   TENANT_ID: common (optional)
-    
-    # For client credentials mode:
-    #   AUTH_MODE: client_credentials
-    #   CLIENT_ID: your-client-id
-    #   CLIENT_SECRET: your-client-secret
-    #   TENANT_ID: your-tenant-id
-    #   USER_EMAIL: your-email@example.com
+    # - Interactive auth mode does NOT work with HTTP/SSE transport
+    # - Use client_credentials or client_provided_token authentication
+    # - See README.md for full authentication setup instructions

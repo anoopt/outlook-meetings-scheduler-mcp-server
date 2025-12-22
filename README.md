@@ -37,14 +37,29 @@ For web-based MCP clients like [nanobot.ai](https://nanobot.ai) and other HTTP-b
 - 🌐 **Enable by setting** `HTTP_PORT` environment variable
 - 🌐 **Access via**: `http://localhost:<PORT>/mcp`
 - 🌐 **Use case**: Web applications, cloud deployments, streaming connections
+- ⚠️ **Important**: HTTP/SSE mode requires **non-interactive authentication** (see note below)
 
 **Example:**
 ```bash
-# Start in HTTP mode on port 3000
+# Start in HTTP mode on port 3000 with client credentials
+AUTH_MODE=client_credentials \
+CLIENT_ID=your-client-id \
+CLIENT_SECRET=your-client-secret \
+TENANT_ID=your-tenant-id \
+USER_EMAIL=your-email@example.com \
 HTTP_PORT=3000 node build/index.js
 
 # Server will be available at http://localhost:3000/mcp
 ```
+
+> **⚠️ Authentication Mode Compatibility:**
+> - **stdio mode**: Supports all authentication modes (interactive, client_credentials, client_provided_token)
+> - **HTTP/SSE mode**: Only supports **non-interactive** authentication modes:
+>   - ✅ `client_credentials` (recommended for HTTP mode)
+>   - ✅ `client_provided_token`
+>   - ❌ `interactive` (NOT compatible - device code flow requires user interaction)
+>
+> When using HTTP/SSE transport, you must configure `AUTH_MODE=client_credentials` or `client_provided_token` with appropriate credentials.
 
 ## ✨ New: Interactive UI with mcp-ui
 
@@ -702,17 +717,26 @@ If you want to test with nanobot using GitHub Codespaces:
 
 1. Open this repository in GitHub Codespaces
 2. Build the server: `npm install && npm run build`
-3. Run nanobot with the included configuration:
+3. Set up authentication credentials (client credentials mode required for HTTP):
+   ```bash
+   export AUTH_MODE=client_credentials
+   export CLIENT_ID=your-client-id
+   export CLIENT_SECRET=your-client-secret
+   export TENANT_ID=your-tenant-id
+   export USER_EMAIL=your-email@example.com
+   export HTTP_PORT=3000
+   ```
+4. Run nanobot with the included configuration:
    ```bash
    docker run -it --rm --network host \
      -v /workspaces/outlook-meetings-scheduler-mcp-server/nanobot.yaml:/nanobot.yaml \
      -e OPENAI_API_KEY="your-openai-api-key" \
-     -e HTTP_PORT=3000 \
-     -e AUTH_MODE=interactive \
      ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
    ```
 
 The included `nanobot.yaml` file configures the Outlook Meetings Assistant agent with appropriate instructions and server connection settings.
+
+> **⚠️ Important for HTTP mode:** Interactive authentication (`AUTH_MODE=interactive`) does NOT work with HTTP/SSE transport. You must use `client_credentials` or `client_provided_token` authentication modes. See the Authentication Modes section for setup details.
 
 **Note:** For production deployments, consider:
 - Using a reverse proxy (nginx, Caddy) with HTTPS
@@ -724,8 +748,13 @@ The included `nanobot.yaml` file configures the Outlook Meetings Assistant agent
 Any MCP client that supports HTTP/SSE transport can connect to this server:
 
 ```bash
-# Start server on custom port
-HTTP_PORT=8080 AUTH_MODE=interactive node build/index.js
+# Start server on custom port with client credentials
+AUTH_MODE=client_credentials \
+CLIENT_ID=your-client-id \
+CLIENT_SECRET=your-client-secret \
+TENANT_ID=your-tenant-id \
+USER_EMAIL=your-email@example.com \
+HTTP_PORT=8080 node build/index.js
 
 # Server endpoints:
 # - Health check: http://localhost:8080/
