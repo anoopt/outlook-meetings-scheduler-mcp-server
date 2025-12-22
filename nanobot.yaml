@@ -2,7 +2,7 @@ agents:
   outlook-agent:
     name: Outlook Meetings Assistant
     description: Your helpful assistant for managing Microsoft Outlook calendar meetings
-    model: gpt-4o-mini
+    model: gpt-5-mini
     mcpServers:
       - outlook
     instructions: |
@@ -32,30 +32,39 @@ mcpServers:
     # Connect to externally running MCP server
     url: http://localhost:3000/mcp
     
-    # IMPORTANT: When connecting to an external server (as above), 
-    # environment variables must be set when STARTING THE SERVER, not here.
+    # ============================================================================
+    # SETUP INSTRUCTIONS
+    # ============================================================================
     # 
-    # To start the server with correct authentication:
+    # This configuration connects to an EXTERNAL MCP server that must be started
+    # separately. You need to run TWO processes:
     # 
-    # export AUTH_MODE=client_credentials
-    # export CLIENT_ID=your-client-id
-    # export CLIENT_SECRET=your-client-secret
-    # export TENANT_ID=your-tenant-id
-    # export USER_EMAIL=your-email@example.com
-    # export HTTP_PORT=3000
-    # node build/index.js
-    #
-    # The env section below is only used when nanobot starts the server as a subprocess.
-    # Since we're connecting to http://localhost:3000/mcp, these env vars are NOT used.
-    #
-    # For subprocess mode (uncomment and modify):
-    # command: node
-    # args:
-    #   - /path/to/build/index.js
-    # env:
-    #   AUTH_MODE: client_credentials
-    #   CLIENT_ID: your-client-id
-    #   CLIENT_SECRET: your-client-secret
-    #   TENANT_ID: your-tenant-id
-    #   USER_EMAIL: your-email@example.com
-    #   HTTP_PORT: "3000"
+    # 1. START THE MCP SERVER (loads .env file automatically):
+    #    $ npm run build
+    #    $ npm start
+    #    
+    #    Alternative (without dotenv package):
+    #    $ set -a; source .env; set +a
+    #    $ node build/index.js
+    #    
+    #    CRITICAL: The MCP server MUST load the .env file for AUTH_MODE to work!
+    #    If AUTH_MODE is not loaded, it will default to interactive browser auth.
+    #    
+    #    Required environment variables in .env:
+    #    - AUTH_MODE (client_credentials or interactive)
+    #    - CLIENT_ID
+    #    - CLIENT_SECRET (if using client_credentials)
+    #    - TENANT_ID
+    #    - USER_EMAIL
+    #    - HTTP_PORT (default: 3000)
+    # 
+    # 2. START NANOBOT (in a separate terminal):
+    #    $ docker run -it --rm --network host \
+    #        -v $(pwd)/nanobot.yaml:/nanobot.yaml \
+    #        --env-file .env \
+    #        ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+    #    
+    #    Nanobot needs OPENAI_API_KEY (loaded via --env-file)
+    # 
+    # See .env.local for a sample environment file.
+    # ============================================================================

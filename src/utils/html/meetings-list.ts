@@ -141,7 +141,7 @@ export const getAvatarColor = (str: string): string => {
  * @param meetings - Array of meeting objects
  * @returns Complete HTML page with meeting cards
  */
-export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string => {
+export const generateUpcomingMeetingsListHTML = (meetings: any[]): string => {
   // Generate meeting cards
   const meetingCards = meetings.map((meeting) => {
     const subject = escapeHtml(meeting.subject || 'No Subject');
@@ -234,10 +234,10 @@ export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string =>
             </div>
           </div>
           ${webLink ? `
-          <a href="${escapeHtml(webLink)}" target="_blank" class="ms-Button ms-Button--primary" title="Open in Outlook">
-            <i class="ms-Icon ms-Icon--OpenInNewWindow" aria-hidden="true"></i>
-            <span>Open</span>
-          </a>
+          <button type="button" class="ms-Button ms-Button--primary copy-link" title="Copy link to clipboard" data-url="${escapeHtml(webLink)}">
+            <i class="ms-Icon ms-Icon--Link" aria-hidden="true"></i>
+            <span>Copy Link</span>
+          </button>
           ` : ''}
         </div>
       </div>
@@ -647,6 +647,66 @@ export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string =>
     </div>
     `}
   </div>
+
+  <script>
+    // Handle copy link button clicks
+    document.querySelectorAll('.copy-link').forEach(function(button) {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        var url = this.getAttribute('data-url');
+        var buttonSpan = this.querySelector('span');
+        var buttonIcon = this.querySelector('i');
+        var originalText = buttonSpan.textContent;
+        var originalIconClass = buttonIcon.className;
+        
+        // Try to copy to clipboard
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function() {
+            // Success - show feedback
+            buttonSpan.textContent = 'Copied!';
+            buttonIcon.className = 'ms-Icon ms-Icon--CheckMark';
+            
+            setTimeout(function() {
+              buttonSpan.textContent = originalText;
+              buttonIcon.className = originalIconClass;
+            }, 2000);
+          }).catch(function() {
+            // Clipboard API failed, try fallback
+            fallbackCopy(url, buttonSpan, buttonIcon, originalText, originalIconClass);
+          });
+        } else {
+          // Fallback for older browsers
+          fallbackCopy(url, buttonSpan, buttonIcon, originalText, originalIconClass);
+        }
+      });
+    });
+    
+    function fallbackCopy(text, buttonSpan, buttonIcon, originalText, originalIconClass) {
+      var textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        document.execCommand('copy');
+        buttonSpan.textContent = 'Copied!';
+        buttonIcon.className = 'ms-Icon ms-Icon--CheckMark';
+      } catch (err) {
+        buttonSpan.textContent = 'Failed';
+      }
+      
+      document.body.removeChild(textArea);
+      
+      setTimeout(function() {
+        buttonSpan.textContent = originalText;
+        buttonIcon.className = originalIconClass;
+      }, 2000);
+    }
+  </script>
 </body>
 </html>
   `.trim();

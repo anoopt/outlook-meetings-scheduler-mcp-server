@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { generateUpcomingMeetingsCarouselHTML } from '../utils/html/meetings-carousel.js';
+import { generateUpcomingMeetingsListHTML } from '../utils/html/meetings-list.js';
 
 /**
  * Store for temporarily holding meeting data
@@ -41,7 +41,7 @@ export function handleUpcomingMeetingsPage(req: Request, res: Response): void {
   }
   
   // Generate and serve the HTML
-  const html = generateUpcomingMeetingsCarouselHTML(meetings);
+  const html = generateUpcomingMeetingsListHTML(meetings);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(html);
 }

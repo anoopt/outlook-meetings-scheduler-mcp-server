@@ -7,7 +7,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && chmod 755 build/*.js",
-    "dev": "npm run build && HTTP_PORT=3000 node build/index.js"
+    "dev": "HTTP_PORT=3000 tsx watch src/index.ts",
+    "dev:stdio": "tsx watch src/index.ts"
   },
   "bin": {
     "outlook-meetings-scheduler": "./build/index.js"
@@ -26,6 +27,7 @@
     "@modelcontextprotocol/sdk": "^1.10.1",
     "@types/express": "^5.0.6",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.2",
     "zod": "^3.24.3"
@@ -34,6 +36,7 @@
     "@microsoft/microsoft-graph-types": "^2.40.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.14.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.8.3"
   }
 }

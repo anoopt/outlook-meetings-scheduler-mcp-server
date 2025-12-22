@@ -90,8 +90,8 @@ export function registerUIEventTools(server: McpServer): void {
       } else {
         // stdio mode - use data URL (fallback for non-HTTP environments)
         // Note: This may not work in all UI clients
-        const { generateUpcomingMeetingsCarouselHTML } = await import("../utils/html/meetings-carousel.js");
-        const htmlContent = generateUpcomingMeetingsCarouselHTML(meetings);
+        const { generateUpcomingMeetingsListHTML } = await import("../utils/html/meetings-list.js");
+        const htmlContent = generateUpcomingMeetingsListHTML(meetings);
         const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`;
         
         uiResource = createUIResource({

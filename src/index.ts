@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// Load environment variables from .env file
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -200,6 +204,16 @@ async function startHttpServer(port: number) {
 
 // Main entry point - determine transport mode based on environment
 async function main() {
+  // Log important environment variables for debugging (without secrets)
+  console.log('\n=== Server Startup Configuration ===');
+  console.log(`AUTH_MODE: ${process.env.AUTH_MODE || '(not set - will auto-detect)'}`);
+  console.log(`CLIENT_ID: ${process.env.CLIENT_ID ? process.env.CLIENT_ID.substring(0, 8) + '...' : '(not set)'}`);
+  console.log(`CLIENT_SECRET: ${process.env.CLIENT_SECRET ? '***set***' : '(not set)'}`);
+  console.log(`TENANT_ID: ${process.env.TENANT_ID ? process.env.TENANT_ID.substring(0, 8) + '...' : '(not set)'}`);
+  console.log(`USER_EMAIL: ${process.env.USER_EMAIL || '(not set)'}`);
+  console.log(`HTTP_PORT: ${process.env.HTTP_PORT || '(not set - will use stdio)'}`);
+  console.log('===================================\n');
+  
   const httpPortEnv = process.env.HTTP_PORT;
   
   if (httpPortEnv) {

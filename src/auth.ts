@@ -136,6 +136,7 @@ export interface AuthConfig {
   accessToken?: string;
   expiresOn?: Date;
   redirectUri?: string;
+  preferDeviceCode?: boolean; // Use device code flow instead of browser auth (better for HTTP mode/containers)
 }
 
 export class AuthManager {
@@ -198,18 +199,10 @@ export class AuthManager {
           unsafeAllowUnencryptedStorage: true // Allow unencrypted storage on Linux without libsecret
         };
 
-        // Try Interactive Browser first (opens browser automatically)
-        try {
-          this.credential = new InteractiveBrowserCredential({
-            tenantId: tenantId,
-            clientId: clientId,
-            redirectUri: this.config.redirectUri || DEFAULT_REDIRECT_URI,
-            tokenCachePersistenceOptions: tokenCachePersistenceOptions,
-          });
-          logger.info("Using interactive browser authentication");
-        } catch (error) {
-          // Fallback to Device Code flow if browser auth is not available
-          logger.info("Browser authentication not available, using device code flow");
+        // In HTTP mode (or when preferDeviceCode is set), use Device Code flow
+        // because the browser callback won't work in containers/Codespaces
+        if (this.config.preferDeviceCode) {
+          logger.info("Using device code flow (HTTP mode or preferDeviceCode set)");
           this.credential = new DeviceCodeCredential({
             tenantId: tenantId,
             clientId: clientId,
@@ -222,6 +215,32 @@ export class AuthManager {
               return Promise.resolve();
             },
           });
+        } else {
+          // Try Interactive Browser first (opens browser automatically) - works best in stdio mode
+          try {
+            this.credential = new InteractiveBrowserCredential({
+              tenantId: tenantId,
+              clientId: clientId,
+              redirectUri: this.config.redirectUri || DEFAULT_REDIRECT_URI,
+              tokenCachePersistenceOptions: tokenCachePersistenceOptions,
+            });
+            logger.info("Using interactive browser authentication");
+          } catch (error) {
+            // Fallback to Device Code flow if browser auth is not available
+            logger.info("Browser authentication not available, using device code flow");
+            this.credential = new DeviceCodeCredential({
+              tenantId: tenantId,
+              clientId: clientId,
+              tokenCachePersistenceOptions: tokenCachePersistenceOptions,
+              userPromptCallback: (info: DeviceCodeInfo) => {
+                this.deviceCodeInfo = info; // Store for access by tools
+                this.isAuthenticating = true;
+                logger.info(`Device code authentication required: ${info.userCode} at ${info.verificationUri}`);
+                // Don't use console.log - it interferes with MCP protocol
+                return Promise.resolve();
+              },
+            });
+          }
         }
         break;
 
