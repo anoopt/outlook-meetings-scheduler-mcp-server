@@ -8,12 +8,6 @@
 export const DEFAULT_UPCOMING_MEETINGS_COUNT = 5;
 
 /**
- * Fluent UI CDN URL for React components
- * Using Fluent UI v9 (Web Components)
- */
-export const FLUENT_UI_CDN_URL = 'https://unpkg.com/@fluentui/web-components';
-
-/**
  * UI resource URIs
  */
 export const UI_RESOURCE_URIS = {
