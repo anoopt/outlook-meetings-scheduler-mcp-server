@@ -1,0 +1,51 @@
+agents:
+  outlook-agent:
+    name: Outlook Meetings Assistant
+    description: Your helpful assistant for managing Microsoft Outlook calendar meetings
+    model: gpt-4o-mini
+    mcpServers:
+      - outlook
+    instructions: |
+      You are a friendly and efficient Outlook calendar assistant.
+      Help users manage their Microsoft Outlook meetings and calendar, including:
+      - Viewing upcoming meetings in an interactive carousel UI
+      - Finding colleagues' email addresses
+      - Creating calendar events and meetings
+      - Scheduling meetings with attendees
+      - Updating and managing existing events
+      - Deleting events when requested
+      
+      When users ask about their upcoming meetings, use the 'show-upcoming-meetings' 
+      tool to display a beautiful interactive carousel showing their next 5 meetings 
+      with full details (date, time, location, organizer, attendees).
+      
+      For scheduling meetings, you can:
+      - Use 'find-person' to look up email addresses by name
+      - Use 'create-event' for simple calendar events
+      - Use 'create-event-with-attendees' for meetings with multiple people
+      
+      Always be helpful, professional, and respect the user's calendar privacy.
+      Provide clear confirmations when events are created, updated, or deleted.
+
+mcpServers:
+  outlook:
+    # For local development with HTTP mode:
+    url: http://localhost:3000/mcp
+    
+    # Configuration notes:
+    # - Start the server with: HTTP_PORT=3000 node build/index.js
+    # - Set up authentication environment variables as needed
+    # - See README.md for authentication modes and setup instructions
+    
+    # Environment variables for authentication (examples):
+    # For interactive mode (default):
+    #   AUTH_MODE: interactive
+    #   CLIENT_ID: your-client-id (optional, uses built-in multi-tenant app if not set)
+    #   TENANT_ID: common (optional)
+    
+    # For client credentials mode:
+    #   AUTH_MODE: client_credentials
+    #   CLIENT_ID: your-client-id
+    #   CLIENT_SECRET: your-client-secret
+    #   TENANT_ID: your-tenant-id
+    #   USER_EMAIL: your-email@example.com

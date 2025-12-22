@@ -696,6 +696,24 @@ The agenda is:
 
 3. Set up authentication environment variables as needed (see Authentication Modes section)
 
+**Testing with GitHub Codespaces and Docker:**
+
+If you want to test with nanobot using GitHub Codespaces:
+
+1. Open this repository in GitHub Codespaces
+2. Build the server: `npm install && npm run build`
+3. Run nanobot with the included configuration:
+   ```bash
+   docker run -it --rm --network host \
+     -v /workspaces/outlook-meetings-scheduler-mcp-server/nanobot.yaml:/nanobot.yaml \
+     -e OPENAI_API_KEY="your-openai-api-key" \
+     -e HTTP_PORT=3000 \
+     -e AUTH_MODE=interactive \
+     ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+   ```
+
+The included `nanobot.yaml` file configures the Outlook Meetings Assistant agent with appropriate instructions and server connection settings.
+
 **Note:** For production deployments, consider:
 - Using a reverse proxy (nginx, Caddy) with HTTPS
 - Deploying to a cloud platform (Heroku, Railway, Fly.io)

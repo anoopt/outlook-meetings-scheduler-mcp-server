@@ -64,6 +64,12 @@ async function startStdioServer() {
  */
 async function startHttpServer(port: number) {
   const app = express();
+  
+  // Parse JSON bodies for message endpoint
+  app.use(express.json());
+
+  // Store active server instances by session
+  const serverSessions = new Map<string, McpServer>();
 
   // Health check endpoint
   app.get('/', (req, res) => {
@@ -73,8 +79,7 @@ async function startHttpServer(port: number) {
       status: 'running',
       transport: 'sse',
       endpoints: {
-        mcp: '/mcp',
-        sse: '/sse'
+        mcp: '/mcp'
       },
       tools: [
         'find-person',
@@ -92,15 +97,28 @@ async function startHttpServer(port: number) {
 
   // MCP SSE endpoint
   app.get('/mcp', async (req, res) => {
+    logger.info("ℹ️ New SSE connection established");
+    
     const server = createServer();
     const transport = new SSEServerTransport('/message', res);
+    
+    // Store server instance for this connection
+    const sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    serverSessions.set(sessionId, server);
+    
+    // Clean up on connection close
+    res.on('close', () => {
+      logger.info("ℹ️ SSE connection closed");
+      serverSessions.delete(sessionId);
+    });
+    
     await server.connect(transport);
-    logger.info("ℹ️ New SSE connection established");
   });
 
-  // SSE message endpoint
+  // SSE message endpoint - currently handled by SSE transport internally
   app.post('/message', async (req, res) => {
-    // This endpoint is used by SSE transport to receive messages
+    // Messages are handled by the SSE transport automatically
+    // This endpoint exists for SSE protocol compatibility
     res.status(200).send();
   });
 
@@ -113,9 +131,17 @@ async function startHttpServer(port: number) {
 
 // Main entry point - determine transport mode based on environment
 async function main() {
-  const httpPort = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT, 10) : null;
-
-  if (httpPort) {
+  const httpPortEnv = process.env.HTTP_PORT;
+  
+  if (httpPortEnv) {
+    // Validate HTTP_PORT
+    const httpPort = parseInt(httpPortEnv, 10);
+    
+    if (isNaN(httpPort) || httpPort < 1 || httpPort > 65535) {
+      logger.error(`🚨 Invalid HTTP_PORT value: ${httpPortEnv}. Must be a number between 1 and 65535.`);
+      process.exit(1);
+    }
+    
     // HTTP/SSE mode for web-based clients
     await startHttpServer(httpPort);
   } else {
