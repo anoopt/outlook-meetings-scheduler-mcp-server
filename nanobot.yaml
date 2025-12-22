@@ -29,21 +29,33 @@ agents:
 
 mcpServers:
   outlook:
-    # For local development with HTTP mode:
+    # Connect to externally running MCP server
     url: http://localhost:3000/mcp
     
-    # IMPORTANT: HTTP/SSE mode requires non-interactive authentication
-    # Use client_credentials mode instead of interactive mode
-    # Set these environment variables before starting the server:
-    env:
-      AUTH_MODE: client_credentials
-      CLIENT_ID: your-client-id
-      CLIENT_SECRET: your-client-secret
-      TENANT_ID: your-tenant-id
-      USER_EMAIL: your-email@example.com
-      HTTP_PORT: "3000"
-    
-    # Configuration notes:
-    # - Interactive auth mode does NOT work with HTTP/SSE transport
-    # - Use client_credentials or client_provided_token authentication
-    # - See README.md for full authentication setup instructions
+    # IMPORTANT: When connecting to an external server (as above), 
+    # environment variables must be set when STARTING THE SERVER, not here.
+    # 
+    # To start the server with correct authentication:
+    # 
+    # export AUTH_MODE=client_credentials
+    # export CLIENT_ID=your-client-id
+    # export CLIENT_SECRET=your-client-secret
+    # export TENANT_ID=your-tenant-id
+    # export USER_EMAIL=your-email@example.com
+    # export HTTP_PORT=3000
+    # node build/index.js
+    #
+    # The env section below is only used when nanobot starts the server as a subprocess.
+    # Since we're connecting to http://localhost:3000/mcp, these env vars are NOT used.
+    #
+    # For subprocess mode (uncomment and modify):
+    # command: node
+    # args:
+    #   - /path/to/build/index.js
+    # env:
+    #   AUTH_MODE: client_credentials
+    #   CLIENT_ID: your-client-id
+    #   CLIENT_SECRET: your-client-secret
+    #   TENANT_ID: your-tenant-id
+    #   USER_EMAIL: your-email@example.com
+    #   HTTP_PORT: "3000"

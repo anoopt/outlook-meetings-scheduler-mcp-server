@@ -16,6 +16,15 @@ async function initializeAuth(): Promise<{ authManager: AuthManager; graph: Grap
     return { authManager: authManagerInstance, graph: graphInstance };
   }
   
+  // Log environment variables for debugging (without exposing secrets)
+  logger.info("=== Authentication Configuration ===");
+  logger.info(`AUTH_MODE env var: ${process.env.AUTH_MODE || '(not set)'}`);
+  logger.info(`CLIENT_ID present: ${!!process.env.CLIENT_ID}`);
+  logger.info(`CLIENT_SECRET present: ${!!process.env.CLIENT_SECRET}`);
+  logger.info(`TENANT_ID present: ${!!process.env.TENANT_ID}`);
+  logger.info(`USER_EMAIL: ${process.env.USER_EMAIL || '(not set)'}`);
+  logger.info(`ACCESS_TOKEN present: ${!!process.env.ACCESS_TOKEN}`);
+  
   // Smart authentication mode detection for backward compatibility
   let authModeStr = process.env.AUTH_MODE;
   
@@ -24,21 +33,22 @@ async function initializeAuth(): Promise<{ authManager: AuthManager; graph: Grap
     if (process.env.CLIENT_SECRET) {
       // Presence of CLIENT_SECRET indicates client_credentials mode (backward compatibility)
       authModeStr = "client_credentials";
-      logger.info("Detected client_credentials mode (CLIENT_SECRET present)");
+      logger.info("🔍 Detected client_credentials mode (CLIENT_SECRET present)");
     } else if (process.env.ACCESS_TOKEN) {
       // Presence of ACCESS_TOKEN indicates client_provided_token mode
       authModeStr = "client_provided_token";
-      logger.info("Detected client_provided_token mode (ACCESS_TOKEN present)");
+      logger.info("🔍 Detected client_provided_token mode (ACCESS_TOKEN present)");
     } else {
       // Default to interactive mode for new users
       authModeStr = "interactive";
-      logger.info("Defaulting to interactive mode");
+      logger.info("🔍 Defaulting to interactive mode (no credentials found)");
     }
   } else {
-    logger.info(`Using explicit AUTH_MODE: ${authModeStr}`);
+    logger.info(`✅ Using explicit AUTH_MODE: ${authModeStr}`);
   }
   
   const authMode = authModeStr as AuthMode;
+  logger.info(`📋 Final authentication mode: ${authMode}`);
   
   const clientId = process.env.CLIENT_ID || "";
   const clientSecret = process.env.CLIENT_SECRET || "";
@@ -49,6 +59,7 @@ async function initializeAuth(): Promise<{ authManager: AuthManager; graph: Grap
   
   switch (authMode) {
     case AuthMode.ClientCredentials:
+      logger.info("🔐 Initializing ClientCredentials authentication");
       authManager = new AuthManager({
         mode: AuthMode.ClientCredentials,
         clientId,
@@ -58,6 +69,7 @@ async function initializeAuth(): Promise<{ authManager: AuthManager; graph: Grap
       break;
       
     case AuthMode.Interactive:
+      logger.info("🔐 Initializing Interactive authentication");
       authManager = new AuthManager({
         mode: AuthMode.Interactive,
         clientId: clientId || undefined, // Use default if not provided
@@ -67,6 +79,7 @@ async function initializeAuth(): Promise<{ authManager: AuthManager; graph: Grap
       break;
       
     case AuthMode.ClientProvidedToken:
+      logger.info("🔐 Initializing ClientProvidedToken authentication");
       authManager = new AuthManager({
         mode: AuthMode.ClientProvidedToken,
         accessToken: process.env.ACCESS_TOKEN,
