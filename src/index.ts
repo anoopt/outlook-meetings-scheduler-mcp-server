@@ -129,9 +129,22 @@ async function startHttpServer(port: number) {
         // Reuse existing transport for this session
         transport = transports.get(sessionId);
         logger.info(`ℹ️ Reusing existing session: ${sessionId}`);
-      } else if (!sessionId && req.method === 'GET') {
-        // GET request without session ID - create new SSE connection
-        logger.info(`ℹ️ New SSE connection request - creating transport`);
+      } else if (sessionId && typeof sessionId === 'string' && !transports.has(sessionId)) {
+        // Session ID provided but not found - session expired (server restarted)
+        // Return 410 Gone to signal client should reconnect with a new session
+        logger.info(`ℹ️ Session ${sessionId} not found (server may have restarted) - rejecting with 410 Gone`);
+        res.status(410).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: 'Session expired. Please reconnect.'
+          },
+          id: null
+        });
+        return;
+      } else if (!sessionId) {
+        // No session ID - create new connection (works for both GET and POST)
+        logger.info(`ℹ️ New connection request (${req.method}) - creating transport`);
         
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
@@ -155,25 +168,13 @@ async function startHttpServer(port: number) {
         // Connect the transport to a new MCP server instance
         const server = createServer();
         await server.connect(transport);
-      } else if (sessionId && typeof sessionId === 'string' && !transports.has(sessionId)) {
-        // Session ID provided but not found - reject to force client to reconnect properly
-        logger.info(`ℹ️ Session ${sessionId} not found (server may have restarted) - rejecting request to force reconnection`);
-        res.status(410).json({
-          jsonrpc: '2.0',
-          error: {
-            code: -32000,
-            message: 'Session expired. Please reconnect.'
-          },
-          id: null
-        });
-        return;
       } else {
-        // Invalid request
+        // Unexpected case
         res.status(400).json({
           jsonrpc: '2.0',
           error: {
             code: -32000,
-            message: 'Bad Request: Invalid request - only GET requests without session ID are allowed for new connections'
+            message: 'Bad Request: Invalid request'
           },
           id: null
         });
