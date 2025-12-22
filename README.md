@@ -22,6 +22,31 @@ It integrates seamlessly with other MCP servers, such as the GitHub MCP server, 
 ## Demo
 ![Demo](./assets/demo.gif)
 
+## ✨ New: Interactive UI with mcp-ui
+
+This MCP server now features an interactive carousel UI powered by [mcp-ui](https://mcpui.dev) to display your upcoming meetings in a beautiful, easy-to-navigate interface.
+
+### Upcoming Meetings Carousel
+
+When you ask to "show my upcoming meetings", you'll see an interactive carousel displaying your next 5 meetings with:
+- 📅 Meeting date and time
+- 📍 Location information
+- 👤 Organizer details
+- 👥 Number of attendees
+- ⏱️ Duration badge
+- 🔗 Quick "Join Meeting" button
+
+**Navigate through your meetings** with arrow buttons, dots, or keyboard shortcuts (← →).
+
+![Upcoming Meetings Carousel - View 1](https://github.com/user-attachments/assets/9bbfd9c8-5c7a-4a40-a8cc-799d7f460fc2)
+
+![Upcoming Meetings Carousel - View 2](https://github.com/user-attachments/assets/f27d00e4-bece-4ed8-b2aa-a0399ef3fcd7)
+
+Try it yourself:
+```
+Show my upcoming meetings
+```
+
 ## Tools
 
 1. `find-person`
@@ -92,6 +117,18 @@ It integrates seamlessly with other MCP servers, such as the GitHub MCP server, 
      - `addAttendees` (optional): Array of attendees to add: { email, name (optional), type (optional) }
      - `removeAttendees` (optional): Array of email addresses to remove from the event
    - Returns: Updated event attendee information
+
+9. `show-upcoming-meetings` ✨ **NEW - Interactive UI**
+   - Show upcoming meetings in an interactive carousel UI powered by [mcp-ui](https://mcpui.dev)
+   - Input:
+     - `count` (optional): Number of upcoming meetings to show (default: 5, max: 10)
+   - Returns: Interactive carousel displaying meeting details with navigation
+   - Features:
+     - Beautiful gradient design with smooth animations
+     - Navigate between meetings with arrow buttons or keyboard
+     - Shows meeting subject, date/time, location, organizer, and attendees
+     - Quick "Join Meeting" buttons for each meeting
+     - Responsive design that works on any screen size
 
 ## Setup
 
