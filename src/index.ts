@@ -129,22 +129,14 @@ async function startHttpServer(port: number) {
         // Reuse existing transport for this session
         transport = transports.get(sessionId);
         logger.info(`ℹ️ Reusing existing session: ${sessionId}`);
-      } else if (sessionId && typeof sessionId === 'string' && !transports.has(sessionId)) {
-        // Session ID provided but not found - session expired (server restarted)
-        // Return 410 Gone to signal client should reconnect with a new session
-        logger.info(`ℹ️ Session ${sessionId} not found (server may have restarted) - rejecting with 410 Gone`);
-        res.status(410).json({
-          jsonrpc: '2.0',
-          error: {
-            code: -32000,
-            message: 'Session expired. Please reconnect.'
-          },
-          id: null
-        });
-        return;
-      } else if (!sessionId) {
-        // No session ID - create new connection (works for both GET and POST)
-        logger.info(`ℹ️ New connection request (${req.method}) - creating transport`);
+      } else {
+        // No session ID or invalid/expired session ID - create new connection
+        // This allows seamless reconnection after server restarts
+        if (sessionId) {
+          logger.info(`ℹ️ Session ${sessionId} not found (server may have restarted) - creating new transport`);
+        } else {
+          logger.info(`ℹ️ New connection request (${req.method}) - creating transport`);
+        }
         
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
@@ -168,17 +160,6 @@ async function startHttpServer(port: number) {
         // Connect the transport to a new MCP server instance
         const server = createServer();
         await server.connect(transport);
-      } else {
-        // Unexpected case
-        res.status(400).json({
-          jsonrpc: '2.0',
-          error: {
-            code: -32000,
-            message: 'Bad Request: Invalid request'
-          },
-          id: null
-        });
-        return;
       }
 
       if (transport) {
