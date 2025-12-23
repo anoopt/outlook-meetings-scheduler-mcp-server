@@ -20,8 +20,10 @@ export function registerEventCreateTools(server: McpServer): void {
       start: z.string().optional().describe("Start time in ISO format (e.g. 2025-04-20T12:00:00). Defaults to next business day at noon"),
       end: z.string().optional().describe("End time in ISO format (e.g. 2025-04-20T13:00:00). Defaults to next business day at 1PM"),
       timeZone: z.string().optional().describe("Time zone for the event. Defaults to GMT Standard Time"),
+      isOnlineMeeting: z.boolean().optional().describe("Whether to create an online meeting (e.g. Teams). Defaults to false"),
+      onlineMeetingProvider: z.enum(["teamsForBusiness", "skypeForBusiness", "skypeForConsumer"]).optional().describe("Online meeting provider. Defaults to teamsForBusiness when isOnlineMeeting is true"),
     },
-    async ({ subject, body, start, end, timeZone = "GMT Standard Time" }) => {
+    async ({ subject, body, start, end, timeZone = "GMT Standard Time", isOnlineMeeting = false, onlineMeetingProvider }) => {
       const { graph, userEmail, authError } = await getGraphConfig();
 
       if (authError) {
@@ -49,7 +51,9 @@ export function registerEventCreateTools(server: McpServer): void {
         end: {
           dateTime: endTime,
           timeZone
-        }
+        },
+        isOnlineMeeting,
+        onlineMeetingProvider: isOnlineMeeting ? (onlineMeetingProvider || "teamsForBusiness") : undefined
       };
   
       // Call the Graph API to create the event
@@ -69,6 +73,7 @@ export function registerEventCreateTools(server: McpServer): void {
       // Format the result for response
       const eventUrl = result.webLink || "No event URL available";
       const eventId = result.id || "No event ID available";
+      const onlineMeetingUrl = result.onlineMeeting?.joinUrl || null;
       const successMessage = `
 Calendar event created successfully!
 
@@ -76,7 +81,7 @@ Subject: ${subject}
 Start: ${startTime}
 End: ${endTime}
 Time Zone: ${timeZone}
-User: ${userEmail}
+${isOnlineMeeting ? `Online Meeting: Yes (${onlineMeetingProvider || 'teamsForBusiness'})\n` : ''}${onlineMeetingUrl ? `Join URL: ${onlineMeetingUrl}\n` : ''}User: ${userEmail}
 Event ID: ${eventId}
 Event URL: ${eventUrl}
                     `;
@@ -110,9 +115,11 @@ Event URL: ${eventUrl}
           name: z.string().optional().describe("Name of the attendee"),
           type: z.enum(["required", "optional"]).optional().describe("Type of attendee: required or optional")
         })
-      ).describe("List of attendees for the event")
+      ).describe("List of attendees for the event"),
+      isOnlineMeeting: z.boolean().optional().describe("Whether to create an online meeting (e.g. Teams). Defaults to false"),
+      onlineMeetingProvider: z.enum(["teamsForBusiness", "skypeForBusiness", "skypeForConsumer"]).optional().describe("Online meeting provider. Defaults to teamsForBusiness when isOnlineMeeting is true"),
     },
-    async ({ subject, body, start, end, timeZone = "GMT Standard Time", location, attendees }) => {
+    async ({ subject, body, start, end, timeZone = "GMT Standard Time", location, attendees, isOnlineMeeting = false, onlineMeetingProvider }) => {
       const { graph, userEmail, authError } = await getGraphConfig();
 
       if (authError) {
@@ -150,7 +157,9 @@ Event URL: ${eventUrl}
           dateTime: endTime,
           timeZone
         },
-        attendees: formattedAttendees
+        attendees: formattedAttendees,
+        isOnlineMeeting,
+        onlineMeetingProvider: isOnlineMeeting ? (onlineMeetingProvider || "teamsForBusiness") : undefined
       };
 
       // Add location if provided
@@ -177,6 +186,7 @@ Event URL: ${eventUrl}
       // Format the result for response
       const eventUrl = result.webLink || "No event URL available";
       const eventId = result.id || "No event ID available";
+      const onlineMeetingUrl = result.onlineMeeting?.joinUrl || null;
       const successMessage = `
 Calendar event created successfully!
 
@@ -184,7 +194,7 @@ Subject: ${subject}
 Start: ${startTime}
 End: ${endTime}
 Time Zone: ${timeZone}
-${location ? `Location: ${location}\n                ` : ''}User: ${userEmail}
+${location ? `Location: ${location}\n` : ''}${isOnlineMeeting ? `Online Meeting: Yes (${onlineMeetingProvider || 'teamsForBusiness'})\n` : ''}${onlineMeetingUrl ? `Join URL: ${onlineMeetingUrl}\n` : ''}User: ${userEmail}
 Attendees: 
 ${formattedAttendees.map(a => {
     const name = a.emailAddress?.name || 'No name';

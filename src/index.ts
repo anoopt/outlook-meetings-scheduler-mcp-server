@@ -8,6 +8,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { logger, initializeLogger } from './logger.js';
 import { registerPeopleTools } from './tools/people.js';
 import { registerEventCreateTools } from './tools/event-create.js';
@@ -101,8 +102,7 @@ async function startHttpServer(port: number) {
       status: 'running',
       transport: 'streamable-http',
       endpoints: {
-        mcp: '/mcp',
-        ui: '/ui'
+        mcp: '/mcp'
       },
       tools: [
         'find-person',
@@ -118,61 +118,32 @@ async function startHttpServer(port: number) {
     });
   });
 
-  // MCP endpoint - handles all HTTP methods (GET, POST, DELETE)
-  app.all('/mcp', async (req, res) => {
+  // Handle POST requests for client-to-server communication
+  app.post('/mcp', async (req, res) => {
     try {
       // Check for existing session ID
-      const sessionId = req.headers['mcp-session-id'];
+      const sessionId = req.headers['mcp-session-id'] as string | undefined;
       let transport: StreamableHTTPServerTransport | undefined;
 
-      if (sessionId && typeof sessionId === 'string' && transports.has(sessionId)) {
+      if (sessionId && transports.has(sessionId)) {
         // Reuse existing transport for this session
         transport = transports.get(sessionId);
         logger.info(`ℹ️ Reusing existing session: ${sessionId}`);
-      } else if (sessionId && typeof sessionId === 'string') {
-        // Session ID provided but not found (expired/invalid after server restart)
-        // For POST/DELETE: Client must reconnect with GET first
-        if (req.method !== 'GET') {
-          logger.info(`ℹ️ Session ${sessionId} not found, ${req.method} request rejected - client should reconnect with GET`);
-          return res.status(400).json({
-            jsonrpc: '2.0',
-            error: {
-              code: -32000,
-              message: 'Bad Request: Session expired or invalid. Please reconnect by sending a GET request to establish a new session.'
-            },
-            id: null
-          });
-        }
-        // For GET with invalid session: create new session (fall through)
-        logger.info(`ℹ️ Session ${sessionId} not found (server may have restarted) - creating new session via GET`);
-      } else if (req.method !== 'GET') {
-        // No session ID and not a GET request
-        logger.info(`ℹ️ ${req.method} request without session ID - client should send GET first`);
-        return res.status(400).json({
-          jsonrpc: '2.0',
-          error: {
-            code: -32000,
-            message: 'Bad Request: No session ID provided. Please establish a session first by sending a GET request.'
-          },
-          id: null
-        });
-      }
-
-      // Create new transport for GET requests without valid session
-      if (!transport) {
-        logger.info(`ℹ️ Establishing new session via GET request`);
+      } else if (!sessionId && isInitializeRequest(req.body)) {
+        // New initialization request - create new transport
+        logger.info('ℹ️ New initialization request received');
         
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           onsessioninitialized: (sid) => {
-            logger.info(`ℹ️ Session initialized with ID: ${sid}`);
+            logger.info(`ℹ️ Session initialized: ${sid}`);
             if (transport) {
               transports.set(sid, transport);
             }
           }
         });
 
-        // Set up onclose handler to clean up transport when closed
+        // Clean up on close
         transport.onclose = () => {
           const sid = transport?.sessionId;
           if (sid && transports.has(sid)) {
@@ -181,26 +152,29 @@ async function startHttpServer(port: number) {
           }
         };
 
-        // Connect the transport to a new MCP server instance
+        // Connect to a new MCP server instance
         const server = createServer();
         await server.connect(transport);
-      }
-
-      if (transport) {
-        // Handle the request with the transport
-        await transport.handleRequest(req, res, req.body);
       } else {
+        // Invalid request - no session and not an initialize request
+        logger.error('🚨 Invalid request: no session ID and not an initialize request');
         res.status(400).json({
           jsonrpc: '2.0',
           error: {
             code: -32000,
-            message: 'Bad Request: Transport not found'
+            message: 'Bad Request: No valid session. Send an initialize request to start a new session.'
           },
           id: null
         });
+        return;
+      }
+
+      // Handle the request
+      if (transport) {
+        await transport.handleRequest(req, res, req.body);
       }
     } catch (error) {
-      logger.error('Error handling MCP request:', error);
+      logger.error('Error handling MCP POST request:', error);
       if (!res.headersSent) {
         res.status(500).json({
           jsonrpc: '2.0',
@@ -212,6 +186,48 @@ async function startHttpServer(port: number) {
         });
       }
     }
+  });
+
+  // Handle GET requests for SSE streams (server-to-client notifications)
+  app.get('/mcp', async (req, res) => {
+    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    
+    if (!sessionId || !transports.has(sessionId)) {
+      logger.error('🚨 GET request without valid session ID');
+      res.status(400).json({
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: 'Bad Request: Invalid or missing session ID'
+        },
+        id: null
+      });
+      return;
+    }
+
+    const transport = transports.get(sessionId)!;
+    await transport.handleRequest(req, res);
+  });
+
+  // Handle DELETE requests for session termination
+  app.delete('/mcp', async (req, res) => {
+    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    
+    if (!sessionId || !transports.has(sessionId)) {
+      logger.error('🚨 DELETE request without valid session ID');
+      res.status(400).json({
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: 'Bad Request: Invalid or missing session ID'
+        },
+        id: null
+      });
+      return;
+    }
+
+    const transport = transports.get(sessionId)!;
+    await transport.handleRequest(req, res);
   });
 
   // Start HTTP server

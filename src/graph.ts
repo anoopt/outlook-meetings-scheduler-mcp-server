@@ -50,7 +50,9 @@ export default class Graph {
 
                 if (peopleResult && peopleResult.value && peopleResult.value.length > 0) {
                     logger.info(`✅ Found ${peopleResult.value.length} matching contacts from people API`);
-                    return peopleResult.value;
+                    // Fetch photos for each person
+                    const peopleWithPhotos = await this.addPhotosToResults(client, peopleResult.value);
+                    return peopleWithPhotos;
                 }
 
                 // If no results from /people, try searching in the directory
@@ -58,13 +60,15 @@ export default class Graph {
                 const usersResult = await client
                     .api(`/users`)
                     .filter(`startswith(displayName,'${searchTerm}')`)
-                    .select('displayName,mail,userPrincipalName')
+                    .select('displayName,mail,userPrincipalName,jobTitle,officeLocation,id')
                     .top(5)
                     .get();
 
                 if (usersResult && usersResult.value && usersResult.value.length > 0) {
                     logger.info(`✅ Found ${usersResult.value.length} matching users from directory`);
-                    return usersResult.value;
+                    // Fetch photos for each user
+                    const usersWithPhotos = await this.addPhotosToResults(client, usersResult.value);
+                    return usersWithPhotos;
                 }
 
                 logger.info(`⚠️ No matching people found for "${searchTerm}"`);
@@ -75,6 +79,84 @@ export default class Graph {
             }
         }
         return null;
+    };
+
+    /**
+     * Fetch a user's profile photo by email/userId and return as base64 data URL
+     * @param client - Graph client instance
+     * @param emailOrId - Email address or user ID
+     * @returns Base64 data URL of the photo, or null if not available
+     */
+    private async getPhotoByEmail(client: Client, emailOrId: string): Promise<string | null> {
+        try {
+            const photoBlob = await client
+                .api(`/users/${emailOrId}/photo/$value`)
+                .get();
+
+            if (photoBlob) {
+                const buffer = Buffer.from(await photoBlob.arrayBuffer());
+                const base64Photo = buffer.toString('base64');
+                const mimeType = photoBlob.type || 'image/jpeg';
+                return `data:${mimeType};base64,${base64Photo}`;
+            }
+        } catch (error) {
+            // Photo not available
+        }
+        return null;
+    }
+
+    /**
+     * Fetch photos for an array of people/users and add them as base64 data URLs
+     * Can be used for people search results or meeting attendees
+     */
+    async addPhotosToResults(client: Client, people: any[]): Promise<any[]> {
+        const results = await Promise.all(
+            people.map(async (person) => {
+                const userId = person.id || person.userPrincipalName || person.mail;
+                if (!userId) return person;
+
+                const photoDataUrl = await this.getPhotoByEmail(client, userId);
+                if (photoDataUrl) {
+                    return { ...person, photoDataUrl };
+                }
+                return person;
+            })
+        );
+        return results;
+    };
+
+    /**
+     * Add photos to meeting attendees
+     * @param meetings - Array of meeting objects from Graph API
+     * @returns Meetings with attendee photos added
+     */
+    async addAttendeesPhotosToMeetings(meetings: any[]): Promise<any[]> {
+        const client: Client | null = await this.getClient();
+        if (!client) return meetings;
+
+        const results = await Promise.all(
+            meetings.map(async (meeting) => {
+                if (!meeting.attendees || meeting.attendees.length === 0) {
+                    return meeting;
+                }
+
+                const attendeesWithPhotos = await Promise.all(
+                    meeting.attendees.map(async (attendee: any) => {
+                        const email = attendee.emailAddress?.address;
+                        if (!email) return attendee;
+
+                        const photoDataUrl = await this.getPhotoByEmail(client, email);
+                        if (photoDataUrl) {
+                            return { ...attendee, photoDataUrl };
+                        }
+                        return attendee;
+                    })
+                );
+
+                return { ...meeting, attendees: attendeesWithPhotos };
+            })
+        );
+        return results;
     };
 
     async getEvent(eventId: string, userEmail: string): Promise<any> {

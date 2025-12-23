@@ -136,6 +136,61 @@ export const getAvatarColor = (str: string): string => {
 };
 
 /**
+ * Generate attendee facepile HTML (Activity Personas)
+ * Shows overlapping avatar circles for attendees
+ */
+const generateAttendeeFacepile = (attendees: any[], maxDisplay: number = 4): string => {
+  if (!attendees || attendees.length === 0) return '';
+  
+  const displayAttendees = attendees.slice(0, maxDisplay);
+  const overflowCount = attendees.length - maxDisplay;
+  
+  const facesHtml = displayAttendees.map((attendee, index) => {
+    const name = escapeHtml(attendee.emailAddress?.name || 'Unknown');
+    const email = attendee.emailAddress?.address || '';
+    const photoDataUrl = attendee.photoDataUrl || '';
+    const initials = getInitials(name);
+    const color = getAvatarColor(email || name);
+    
+    // Use photo if available, otherwise show initials
+    const avatarContent = photoDataUrl 
+      ? `<img class="facepile-persona-image" src="${photoDataUrl}" alt="${name}" />`
+      : `<span class="facepile-persona-initials">${initials}</span>`;
+    
+    return `
+      <div class="facepile-persona" style="z-index: ${maxDisplay - index};" title="${name}">
+        <div class="facepile-persona-avatar" style="background-color: ${color};">
+          ${avatarContent}
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  const overflowHtml = overflowCount > 0 ? `
+    <div class="facepile-persona facepile-overflow" style="z-index: 0;" title="${overflowCount} more attendee${overflowCount !== 1 ? 's' : ''}">
+      <div class="facepile-persona-avatar facepile-persona-overflow-avatar">
+        <span class="facepile-persona-initials">+${overflowCount}</span>
+      </div>
+    </div>
+  ` : '';
+  
+  return `
+    <div class="ms-DocumentCard-activity attendee-facepile-row">
+      <div class="activity-icon">
+        <i class="ms-Icon ms-Icon--People" aria-hidden="true"></i>
+      </div>
+      <div class="activity-details facepile-container">
+        <div class="facepile">
+          ${facesHtml}
+          ${overflowHtml}
+        </div>
+        <span class="facepile-label">${attendees.length} attendee${attendees.length !== 1 ? 's' : ''}</span>
+      </div>
+    </div>
+  `;
+};
+
+/**
  * Generate a single meeting card HTML
  */
 const generateMeetingCard = (meeting: any): string => {
@@ -145,7 +200,7 @@ const generateMeetingCard = (meeting: any): string => {
   const location = escapeHtml(meeting.location?.displayName || '');
   const organizer = escapeHtml(meeting.organizer?.emailAddress?.name || 'Unknown');
   const organizerEmail = escapeHtml(meeting.organizer?.emailAddress?.address || '');
-  const attendeeCount = meeting.attendees?.length || 0;
+  const attendees = meeting.attendees || [];
   const webLink = meeting.webLink || '';
   const isOnline = meeting.isOnlineMeeting || false;
   const onlineProvider = meeting.onlineMeetingProvider || '';
@@ -205,16 +260,7 @@ const generateMeetingCard = (meeting: any): string => {
           </div>
         </div>
         ` : ''}
-        ${attendeeCount > 0 ? `
-        <div class="ms-DocumentCard-activity">
-          <div class="activity-icon">
-            <i class="ms-Icon ms-Icon--People" aria-hidden="true"></i>
-          </div>
-          <div class="activity-details">
-            <span class="activity-name">${attendeeCount} attendee${attendeeCount !== 1 ? 's' : ''}</span>
-          </div>
-        </div>
-        ` : ''}
+        ${generateAttendeeFacepile(attendees)}
       </div>
       <div class="ms-DocumentCard-footer">
         <div class="organizer-info">
@@ -470,6 +516,7 @@ export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string =>
       transition: box-shadow 0.2s ease, transform 0.2s ease;
       display: flex;
       flex-direction: column;
+      height: 320px;
     }
 
     .ms-DocumentCard:hover {
@@ -484,6 +531,7 @@ export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string =>
       justify-content: center;
       position: relative;
       gap: 12px;
+      flex-shrink: 0;
     }
 
     .ms-DocumentCard-preview .ms-Icon {
@@ -515,6 +563,7 @@ export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string =>
       display: flex;
       flex-direction: column;
       gap: 12px;
+      overflow: hidden;
     }
 
     .ms-DocumentCard-title {
@@ -526,6 +575,7 @@ export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string =>
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      min-height: 44px;
     }
 
     .ms-DocumentCard-activity {
@@ -568,6 +618,72 @@ export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string =>
       font-weight: 600;
     }
 
+    /* Facepile / Activity Personas styles */
+    .attendee-facepile-row {
+      align-items: center;
+    }
+
+    .facepile-container {
+      flex-direction: row !important;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .facepile {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .facepile-persona {
+      position: relative;
+      margin-left: -8px;
+      transition: transform 0.15s ease;
+    }
+
+    .facepile-persona:first-child {
+      margin-left: 0;
+    }
+
+    .facepile-persona:hover {
+      transform: translateY(-2px);
+    }
+
+    .facepile-persona-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--white);
+      box-shadow: 0 1px 2px rgba(0,0,0,.1);
+    }
+
+    .facepile-persona-initials {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--white);
+      text-transform: uppercase;
+    }
+
+    .facepile-persona-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .facepile-persona-overflow-avatar {
+      background-color: var(--neutralTertiary);
+    }
+
+    .facepile-label {
+      font-size: 12px;
+      color: var(--neutralSecondary);
+      white-space: nowrap;
+    }
+
     .ms-DocumentCard-footer {
       display: flex;
       align-items: center;
@@ -575,6 +691,8 @@ export const generateUpcomingMeetingsCarouselHTML = (meetings: any[]): string =>
       padding: 12px 16px;
       border-top: 1px solid var(--neutralLight);
       background-color: var(--neutralLighterAlt);
+      flex-shrink: 0;
+      margin-top: auto;
     }
 
     .organizer-info {

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { generateUpcomingMeetingsListHTML } from '../utils/html/meetings-list.js';
 import { generateUpcomingMeetingsCarouselHTML } from '../utils/html/meetings-carousel.js';
+import { generatePersonaCardsHTML } from '../utils/html/persona-card.js';
 import { getMeetingsViewMode } from '../constants/ui-constants.js';
 
 /**
@@ -8,6 +9,11 @@ import { getMeetingsViewMode } from '../constants/ui-constants.js';
  * In a production environment, this would be replaced with a proper cache/database
  */
 const meetingsCache = new Map<string, any[]>();
+
+/**
+ * Store for temporarily holding people search data
+ */
+const peopleCache = new Map<string, { people: any[], searchTerm: string }>();
 
 /**
  * Store meetings data and return a unique ID
@@ -19,6 +25,21 @@ export function storeMeetingsData(meetings: any[]): string {
   // Auto-cleanup after 5 minutes
   setTimeout(() => {
     meetingsCache.delete(id);
+  }, 5 * 60 * 1000);
+  
+  return id;
+}
+
+/**
+ * Store people search data and return a unique ID
+ */
+export function storePeopleData(people: any[], searchTerm: string): string {
+  const id = `people-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  peopleCache.set(id, { people, searchTerm });
+  
+  // Auto-cleanup after 5 minutes
+  setTimeout(() => {
+    peopleCache.delete(id);
   }, 5 * 60 * 1000);
   
   return id;
@@ -56,9 +77,37 @@ export function handleUpcomingMeetingsPage(req: Request, res: Response): void {
 }
 
 /**
+ * Handler for the people search results page
+ * Renders persona cards for the search results
+ */
+export function handlePeopleSearchPage(req: Request, res: Response): void {
+  const { id } = req.query;
+  
+  if (!id || typeof id !== 'string') {
+    res.status(400).send('Missing or invalid people data ID');
+    return;
+  }
+  
+  const data = peopleCache.get(id);
+  
+  if (!data) {
+    res.status(404).send('People data not found or expired');
+    return;
+  }
+  
+  const html = generatePersonaCardsHTML(data.people, data.searchTerm);
+    
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(html);
+}
+
+/**
  * Setup UI routes for the Express app
  */
 export function setupUIRoutes(app: any): void {
   // Upcoming meetings page (supports both list and carousel views)
   app.get('/ui/upcoming-meetings', handleUpcomingMeetingsPage);
+  
+  // People search results page (persona cards)
+  app.get('/ui/people-search', handlePeopleSearchPage);
 }

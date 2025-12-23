@@ -29,7 +29,7 @@ agents:
 
 mcpServers:
   outlook:
-    # Connect to externally running MCP server
+    # Connect to externally running MCP server via Streamable HTTP
     url: http://localhost:3000/mcp
     
     # ============================================================================

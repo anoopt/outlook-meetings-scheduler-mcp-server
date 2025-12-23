@@ -56,7 +56,7 @@ export function registerUIEventTools(server: McpServer): void {
         };
       }
       
-      const meetings = result.value;
+      let meetings = result.value;
       
       if (meetings.length === 0) {
         return {
@@ -68,6 +68,9 @@ export function registerUIEventTools(server: McpServer): void {
           ],
         };
       }
+
+      // Fetch profile photos for attendees (reusing Graph API photo fetching)
+      meetings = await graph.addAttendeesPhotosToMeetings(meetings);
 
       // Get base URL for HTTP mode
       const baseUrl = getServerBaseUrl();

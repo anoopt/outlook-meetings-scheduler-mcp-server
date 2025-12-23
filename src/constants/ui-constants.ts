@@ -34,6 +34,7 @@ export function getMeetingsViewMode(): MeetingViewMode {
  */
 export const UI_RESOURCE_URIS = {
   UPCOMING_MEETINGS: 'ui://outlook-meetings/upcoming-meetings',
+  PERSONA_CARDS: 'ui://outlook-meetings/persona-cards',
 } as const;
 
 /**
@@ -41,4 +42,5 @@ export const UI_RESOURCE_URIS = {
  */
 export const PREFERRED_FRAME_SIZES = {
   UPCOMING_MEETINGS: ['800px', '600px'] as [string, string],
+  PERSONA_CARDS: ['500px', '300px'] as [string, string],
 } as const;
