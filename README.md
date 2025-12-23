@@ -93,6 +93,42 @@ It integrates seamlessly with other MCP servers, such as the GitHub MCP server, 
      - `removeAttendees` (optional): Array of email addresses to remove from the event
    - Returns: Updated event attendee information
 
+## UI Resources
+
+The MCP server now provides visual UI resources using a React web app built with Fluent UI 2.
+
+### Available Resources
+
+1. `ui://outlook-meetings/upcoming-events`
+   - Displays upcoming calendar events in a modern card-based UI
+   - Shows events for the next 7 days
+   - Includes event details: subject, time, location, and attendees
+
+2. `ui://outlook-meetings/people/{query}`
+   - Displays people search results in a card-based UI
+   - Shows contact information including email, phone, department, and office location
+
+### Running the UI Server
+
+The UI resources require a React web app to be running. To start the UI server:
+
+```bash
+cd ui-app
+npm install
+npm run dev
+```
+
+By default, the UI server runs on `http://localhost:5173`. You can configure this by setting the `UI_SERVER_URL` environment variable.
+
+### How It Works
+
+The MCP server generates URLs that point to the React web app with data embedded as query parameters. The React app:
+- Uses Fluent UI 2 components for modern, accessible design
+- Parses event and people data from URL parameters
+- Displays the information in a visually appealing format
+
+This approach follows the MCP UI specification for external URL resources (iframeUrl), replacing the previous inline HTML approach.
+
 ## Setup
 
 ### Authentication Modes

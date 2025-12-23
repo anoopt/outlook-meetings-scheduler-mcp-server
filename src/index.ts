@@ -7,6 +7,7 @@ import { registerEventCreateTools } from './tools/event-create.js';
 import { registerEventReadTools } from './tools/event-read.js';
 import { registerEventUpdateTools } from './tools/event-update.js';
 import { registerEventDeleteTools } from './tools/event-delete.js';
+import { registerUIResources } from './resources/ui-resource-handlers.js';
 
 /**
  * Outlook Meetings Scheduler MCP Server
@@ -18,10 +19,11 @@ import { registerEventDeleteTools } from './tools/event-delete.js';
 // Create server instance
 const server = new McpServer({
   name: "outlook-meetings-scheduler",
-  version: "0.1.2",
+  version: "0.2.0",
 }, {
   capabilities: {
-    logging: {}
+    logging: {},
+    resources: {}
   }
 });
 
@@ -34,6 +36,9 @@ registerEventCreateTools(server);
 registerEventReadTools(server);
 registerEventUpdateTools(server);
 registerEventDeleteTools(server);
+
+// Register UI resources
+registerUIResources(server);
 
 // Start the server
 async function main() {
