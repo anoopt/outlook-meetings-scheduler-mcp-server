@@ -2,6 +2,8 @@
 
 This guide walks you through testing the Outlook Meetings Scheduler MCP server with the new React UI using nanobot as the MCP client.
 
+The server supports **two transport modes**: stdio (simpler, 2 terminals) and HTTP (separate server process, 3 terminals). Choose the mode that fits your needs.
+
 ## Prerequisites
 
 - Node.js 18+ installed
@@ -9,7 +11,22 @@ This guide walks you through testing the Outlook Meetings Scheduler MCP server w
 - Azure AD credentials (see main README for setup)
 - OpenAI API key (for nanobot)
 
-## Step-by-Step Testing Instructions
+## Transport Modes Overview
+
+### stdio Mode (Recommended for Testing)
+- **Simpler**: Only 2 terminals needed
+- **Auto-managed**: Nanobot spawns the MCP server automatically
+- **Use**: `nanobot.yaml` configuration
+
+### HTTP Mode (Original Setup)
+- **Separate server**: MCP server runs independently
+- **Multiple clients**: Can connect multiple nanobot instances
+- **Use**: `nanobot-http.yaml` configuration
+- **Requires**: 3 terminals (UI + MCP server + nanobot)
+
+---
+
+## Testing Instructions - stdio Mode (Recommended)
 
 ### Step 1: Set Up Environment Variables
 
@@ -203,26 +220,116 @@ npm run build
 
 **Solution**: Stop any other processes using port 5173, or change the port in `ui-app/vite.config.ts` and update `UI_SERVER_URL` in `.env`
 
-## Terminal Setup Summary
+## Terminal Setup Summary - stdio Mode
 
-You should have **3 terminals running**:
+You should have **2 terminals running**:
 
-1. **Terminal 1** (Project root): Builds completed, available for git commands
-2. **Terminal 2** (ui-app directory): React dev server running (`npm run dev`)
-3. **Terminal 3** (Project root): Nanobot client running (interactive)
+1. **Terminal 1** (ui-app directory): React dev server running (`npm run dev`)
+2. **Terminal 2** (Project root): Nanobot client running (spawns MCP server automatically)
 
 ## Stopping the Services
 
 To stop all services:
 
+1. **Stop Nanobot**: Press `Ctrl+C` in Terminal 2 (this also stops the MCP server)
+2. **Stop UI Server**: Press `Ctrl+C` in Terminal 1
+
+---
+
+## Testing Instructions - HTTP Mode
+
+Use this mode if you need to run the MCP server as a separate process or connect multiple clients.
+
+### Setup Steps
+
+Follow Steps 1-3 from the stdio mode above, plus add `HTTP_PORT` to your `.env`:
+
+```bash
+HTTP_PORT=3000
+```
+
+### Running the Services
+
+#### Terminal 1: Start the UI Server
+
+```bash
+cd ui-app
+npm install
+npm run dev
+```
+
+Expected output:
+```
+VITE v7.3.0  ready in 175 ms
+
+➜  Local:   http://localhost:5173/
+```
+
+**Keep this terminal running**.
+
+#### Terminal 2: Start the MCP Server
+
+```bash
+npm run build
+npm start
+```
+
+Expected output:
+```
+🌐 outlook-meetings-scheduler MCP Server running on HTTP port 3000
+📍 MCP endpoint: http://localhost:3000/mcp
+💚 Health check: http://localhost:3000/health
+```
+
+**Keep this terminal running**.
+
+#### Terminal 3: Start Nanobot
+
+##### Local Machine:
+
+```bash
+docker run -it --rm --network host \
+  -v $(pwd)/nanobot-http.yaml:/nanobot.yaml \
+  --env-file .env \
+  ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+```
+
+##### GitHub Codespaces:
+
+```bash
+docker run -it --rm --network host \
+  -v /workspaces/outlook-meetings-scheduler-mcp-server/nanobot-http.yaml:/nanobot.yaml \
+  --env-file /workspaces/outlook-meetings-scheduler-mcp-server/.env \
+  ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+```
+
+### Testing
+
+Follow the same testing steps as stdio mode (see "Test the Functionality" section above).
+
+### Terminal Setup Summary - HTTP Mode
+
+You should have **3 terminals running**:
+
+1. **Terminal 1** (ui-app directory): React dev server running (`npm run dev`)
+2. **Terminal 2** (Project root): MCP HTTP server running (`npm start`)
+3. **Terminal 3** (Project root): Nanobot client running (connects to HTTP server)
+
+### Stopping the Services - HTTP Mode
+
+To stop all services:
+
 1. **Stop Nanobot**: Press `Ctrl+C` in Terminal 3
-2. **Stop UI Server**: Press `Ctrl+C` in Terminal 2
-3. MCP server stops automatically when nanobot exits
+2. **Stop MCP Server**: Press `Ctrl+C` in Terminal 2
+3. **Stop UI Server**: Press `Ctrl+C` in Terminal 1
+
+---
 
 ## Quick Reference
 
 ### Build Commands
-- `npm run build` - Build MCP server
+- `npm run build` - Build MCP server (both stdio and HTTP)
+- `npm run start` - Start MCP server in HTTP mode
 - `npm run build:ui` - Build UI app for production
 - `npm run build:all` - Build both MCP server and UI app
 

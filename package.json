@@ -7,6 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && chmod 755 build/*.js",
+    "start": "node build/index-http.js",
     "build:ui": "cd ui-app && npm install && npm run build",
     "dev:ui": "cd ui-app && npm install && npm run dev",
     "build:all": "npm run build && npm run build:ui"
@@ -26,11 +27,13 @@
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@modelcontextprotocol/sdk": "^1.10.1",
     "date-fns": "^4.1.0",
+    "express": "^5.2.1",
     "jsonwebtoken": "^9.0.2",
     "zod": "^3.24.3"
   },
   "devDependencies": {
     "@microsoft/microsoft-graph-types": "^2.40.0",
+    "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.14.1",
     "typescript": "^5.8.3"

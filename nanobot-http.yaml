@@ -1,7 +1,6 @@
-# Nanobot MCP Client Configuration - stdio Transport Mode
-# This configuration runs the MCP server directly as a subprocess via stdio.
-# This is simpler as it requires only 2 terminals (UI server + nanobot).
-# For HTTP transport mode, see nanobot-http.yaml instead.
+# Nanobot MCP Client Configuration - HTTP Transport Mode
+# This configuration connects to the MCP server via HTTP/SSE transport.
+# Use this when you want to run the MCP server as a separate process.
 
 agents:
   outlook-agent:
@@ -37,19 +36,15 @@ agents:
 
 mcpServers:
   outlook:
-    # Command to run the MCP server directly via stdio
-    command: node
-    args:
-      - build/index.js
+    # Connect to externally running MCP server via HTTP/SSE
+    url: http://localhost:3000/mcp
     
     # ============================================================================
-    # SETUP INSTRUCTIONS (stdio Transport Mode)
+    # SETUP INSTRUCTIONS (HTTP Transport Mode)
     # ============================================================================
     # 
-    # This configuration runs the MCP server directly via stdio transport.
-    # For HTTP transport mode (separate MCP server process), see nanobot-http.yaml
-    # 
-    # You need to run TWO processes:
+    # This configuration connects to an EXTERNAL MCP server that must be started
+    # separately. You need to run THREE processes:
     # 
     # 1. START THE UI SERVER (in a separate terminal):
     #    $ cd ui-app
@@ -62,27 +57,40 @@ mcpServers:
     #    For GitHub Codespaces, update UI_SERVER_URL in .env to use the 
     #    forwarded port URL (e.g., https://your-codespace-name-5173.app.github.dev)
     # 
-    # 2. BUILD THE MCP SERVER (before running nanobot):
+    # 2. START THE MCP SERVER (loads .env file automatically):
     #    $ npm run build
+    #    $ npm start
+    #    
+    #    Alternative (load env manually):
+    #    $ set -a; source .env; set +a
+    #    $ node build/index-http.js
+    #    
+    #    CRITICAL: The MCP server MUST load the .env file for proper configuration!
+    #    
+    #    Required environment variables in .env:
+    #    - AUTHENTICATION_MODE (interactive or client_credentials)
+    #    - CLIENT_ID
+    #    - CLIENT_SECRET (if using client_credentials)
+    #    - TENANT_ID
+    #    - USER_EMAIL
+    #    - HTTP_PORT (default: 3000)
+    #    - UI_SERVER_URL (default: http://localhost:5173)
     # 
-    # 3. START NANOBOT (loads environment from .env file):
+    # 3. START NANOBOT (in another terminal):
     #    
     #    Local:
     #    $ docker run -it --rm --network host \
-    #        -v $(pwd)/nanobot.yaml:/nanobot.yaml \
+    #        -v $(pwd)/nanobot-http.yaml:/nanobot.yaml \
     #        --env-file .env \
     #        ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
     #    
     #    GitHub Codespaces:
     #    $ docker run -it --rm --network host \
-    #        -v /workspaces/outlook-meetings-scheduler-mcp-server/nanobot.yaml:/nanobot.yaml \
+    #        -v /workspaces/outlook-meetings-scheduler-mcp-server/nanobot-http.yaml:/nanobot.yaml \
     #        --env-file /workspaces/outlook-meetings-scheduler-mcp-server/.env \
     #        ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
     #    
-    #    The --env-file flag loads all environment variables from .env:
-    #    - OPENAI_API_KEY (required by nanobot)
-    #    - AUTHENTICATION_MODE, TENANT_ID, CLIENT_ID, etc. (required by MCP server)
-    #    - UI_SERVER_URL (required for UI resources)
+    #    Nanobot needs OPENAI_API_KEY (loaded via --env-file)
     # 
     # See .env.example for a sample environment file.
     # Copy it to .env and fill in your credentials:

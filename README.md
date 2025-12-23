@@ -129,6 +129,52 @@ The MCP server generates URLs that point to the React web app with data embedded
 
 This approach follows the MCP UI specification for external URL resources (iframeUrl), replacing the previous inline HTML approach.
 
+## Transport Modes
+
+The MCP server supports two transport modes:
+
+### 1. stdio Transport (Default)
+
+The server runs as a subprocess spawned by the MCP client (e.g., nanobot). This is simpler and requires only 2 terminals.
+
+**Configuration**: Use `nanobot.yaml`
+
+**Usage**:
+```bash
+# Terminal 1: Start UI server
+cd ui-app && npm run dev
+
+# Terminal 2: Start nanobot (spawns MCP server automatically)
+docker run -it --rm --network host \
+  -v $(pwd)/nanobot.yaml:/nanobot.yaml \
+  --env-file .env \
+  ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+```
+
+### 2. HTTP/SSE Transport
+
+The server runs as a standalone HTTP service. The MCP client connects to it via HTTP. This allows the server to be run independently and supports multiple clients.
+
+**Configuration**: Use `nanobot-http.yaml`
+
+**Usage**:
+```bash
+# Terminal 1: Start UI server
+cd ui-app && npm run dev
+
+# Terminal 2: Start MCP server
+npm run build
+npm start
+
+# Terminal 3: Start nanobot (connects to HTTP server)
+docker run -it --rm --network host \
+  -v $(pwd)/nanobot-http.yaml:/nanobot.yaml \
+  --env-file .env \
+  ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+```
+
+The HTTP server runs on port 3000 by default (configurable via `HTTP_PORT` environment variable).
+
 ## Setup
 
 ### Authentication Modes
