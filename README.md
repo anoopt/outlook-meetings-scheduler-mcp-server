@@ -22,6 +22,70 @@ It integrates seamlessly with other MCP servers, such as the GitHub MCP server, 
 ## Demo
 ![Demo](./assets/demo.gif)
 
+## Transport Modes
+
+This MCP server supports **two transport modes** to work with different types of clients:
+
+### 1. **stdio (Standard Input/Output)** - Default Mode
+For traditional MCP clients like Claude Desktop, VS Code, and other desktop applications.
+- ✅ **Default behavior** - No configuration needed
+- ✅ **Backward compatible** - Existing users unaffected
+- ✅ **Use case**: Local desktop AI assistants
+
+### 2. **HTTP/SSE (Server-Sent Events)** - Web Mode
+For web-based MCP clients like [nanobot.ai](https://nanobot.ai) and other HTTP-based integrations.
+- 🌐 **Enable by setting** `HTTP_PORT` environment variable
+- 🌐 **Access via**: `http://localhost:<PORT>/mcp`
+- 🌐 **Use case**: Web applications, cloud deployments, streaming connections
+- ⚠️ **Important**: HTTP/SSE mode requires **non-interactive authentication** (see note below)
+
+**Example:**
+```bash
+# Start in HTTP mode on port 3000 with client credentials
+AUTH_MODE=client_credentials \
+CLIENT_ID=your-client-id \
+CLIENT_SECRET=your-client-secret \
+TENANT_ID=your-tenant-id \
+USER_EMAIL=your-email@example.com \
+HTTP_PORT=3000 node build/index.js
+
+# Server will be available at http://localhost:3000/mcp
+```
+
+> **⚠️ Authentication Mode Compatibility:**
+> - **stdio mode**: Supports all authentication modes (interactive, client_credentials, client_provided_token)
+> - **HTTP/SSE mode**: 
+>   - ✅ `interactive` (browser-based authentication works when server runs locally)
+>   - ✅ `client_credentials` (recommended for containers/headless environments)
+>   - ✅ `client_provided_token`
+>
+> **Note:** When running in containers or headless environments where a browser cannot be opened, use `client_credentials` or set `PREFER_DEVICE_CODE=true` for device code flow.
+
+## ✨ New: Interactive UI with mcp-ui
+
+This MCP server now features an interactive carousel UI powered by [mcp-ui](https://mcpui.dev) to display your upcoming meetings in a beautiful, easy-to-navigate interface.
+
+### Upcoming Meetings Carousel
+
+When you ask to "show my upcoming meetings", you'll see an interactive carousel displaying your next 5 meetings with:
+- 📅 Meeting date and time
+- 📍 Location information
+- 👤 Organizer details
+- 👥 Number of attendees
+- ⏱️ Duration badge
+- 🔗 Quick "Join Meeting" button
+
+**Navigate through your meetings** with arrow buttons, dots, or keyboard shortcuts (← →).
+
+![Upcoming Meetings Carousel - View 1](https://github.com/user-attachments/assets/9bbfd9c8-5c7a-4a40-a8cc-799d7f460fc2)
+
+![Upcoming Meetings Carousel - View 2](https://github.com/user-attachments/assets/f27d00e4-bece-4ed8-b2aa-a0399ef3fcd7)
+
+Try it yourself:
+```
+Show my upcoming meetings
+```
+
 ## Tools
 
 1. `find-person`
@@ -92,6 +156,18 @@ It integrates seamlessly with other MCP servers, such as the GitHub MCP server, 
      - `addAttendees` (optional): Array of attendees to add: { email, name (optional), type (optional) }
      - `removeAttendees` (optional): Array of email addresses to remove from the event
    - Returns: Updated event attendee information
+
+9. `show-upcoming-meetings` ✨ **NEW - Interactive UI**
+   - Show upcoming meetings in an interactive carousel UI powered by [mcp-ui](https://mcpui.dev)
+   - Input:
+     - `count` (optional): Number of upcoming meetings to show (default: 5, max: 10)
+   - Returns: Interactive carousel displaying meeting details with navigation
+   - Features:
+     - Beautiful gradient design with smooth animations
+     - Navigate between meetings with arrow buttons or keyboard
+     - Shows meeting subject, date/time, location, organizer, and attendees
+     - Quick "Join Meeting" buttons for each meeting
+     - Responsive design that works on any screen size
 
 ## Setup
 
@@ -612,7 +688,88 @@ The agenda is:
 4. Next steps
 ```
 
+## Usage with Web-Based Clients (HTTP Mode)
+
+### Using with nanobot.ai
+
+[nanobot.ai](https://nanobot.ai) is a web-based AI assistant that supports MCP servers via HTTP/SSE transport.
+
+**Setup Instructions:**
+
+1. Start the MCP server in HTTP mode:
+   ```bash
+   # Using Node.js locally
+   HTTP_PORT=3000 node build/index.js
+   
+   # Or using npx
+   HTTP_PORT=3000 npx outlook-meetings-scheduler
+   ```
+
+2. Configure nanobot.ai to connect to your server:
+   - Server URL: `http://localhost:3000/mcp`
+   - Transport: SSE (Server-Sent Events)
+
+3. Set up authentication environment variables as needed (see Authentication Modes section)
+
+**Testing with GitHub Codespaces and Docker:**
+
+If you want to test with nanobot using GitHub Codespaces:
+
+1. Open this repository in GitHub Codespaces
+2. Build the server: `npm install && npm run build`
+3. Set up authentication credentials (client credentials mode required for HTTP):
+   ```bash
+   export AUTH_MODE=client_credentials
+   export CLIENT_ID=your-client-id
+   export CLIENT_SECRET=your-client-secret
+   export TENANT_ID=your-tenant-id
+   export USER_EMAIL=your-email@example.com
+   export HTTP_PORT=3000
+   ```
+4. Run nanobot with the included configuration:
+   ```bash
+   docker run -it --rm --network host \
+     -v /workspaces/outlook-meetings-scheduler-mcp-server/nanobot.yaml:/nanobot.yaml \
+     -e OPENAI_API_KEY="your-openai-api-key" \
+     ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+   ```
+
+The included `nanobot.yaml` file configures the Outlook Meetings Assistant agent with appropriate instructions and server connection settings.
+
+> **💡 Note for HTTP mode:** Interactive authentication works when the server runs locally (browser will open for login). For containers or headless environments, use `client_credentials` or `client_provided_token` authentication modes.
+
+**Note:** For production deployments, consider:
+- Using a reverse proxy (nginx, Caddy) with HTTPS
+- Deploying to a cloud platform (Heroku, Railway, Fly.io)
+- Setting appropriate CORS headers if needed
+
+### Using with Other HTTP MCP Clients
+
+Any MCP client that supports HTTP/SSE transport can connect to this server:
+
+```bash
+# Start server on custom port with client credentials
+AUTH_MODE=client_credentials \
+CLIENT_ID=your-client-id \
+CLIENT_SECRET=your-client-secret \
+TENANT_ID=your-tenant-id \
+USER_EMAIL=your-email@example.com \
+HTTP_PORT=8080 node build/index.js
+
+# Server endpoints:
+# - Health check: http://localhost:8080/
+# - MCP endpoint: http://localhost:8080/mcp
+```
+
 ## Environment Variables
+
+### Transport Configuration
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `HTTP_PORT` | Enable HTTP/SSE mode and set port number (e.g., 3000) | No | Not set (uses stdio) |
+
+When `HTTP_PORT` is set, the server runs in HTTP/SSE mode for web-based clients. When not set, the server runs in stdio mode for desktop clients.
 
 ### Interactive Mode (Default)
 
@@ -623,6 +780,7 @@ The agenda is:
 | `TENANT_ID` | Azure AD Tenant ID | No | `common` (multi-tenant) |
 | `USER_EMAIL` | Email address of the user | No | Auto-detected from signed-in user |
 | `REDIRECT_URI` | Custom redirect URI | No | `http://localhost` |
+| `PREFER_DEVICE_CODE` | Use device code flow instead of browser (for headless/container environments) | No | `false` |
 
 ### Client Credentials Mode
 

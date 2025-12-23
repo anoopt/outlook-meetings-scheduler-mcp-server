@@ -6,7 +6,10 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && chmod 755 build/*.js"
+    "build": "tsc && chmod 755 build/*.js",
+    "dev": "HTTP_PORT=3000 tsx watch src/index.ts",
+    "dev:stdio": "tsx watch src/index.ts",
+    "dev:nanobot": "./scripts/dev-with-nanobot.sh"
   },
   "bin": {
     "outlook-meetings-scheduler": "./build/index.js"
@@ -20,9 +23,13 @@
   "dependencies": {
     "@azure/identity": "^4.12.0",
     "@azure/identity-cache-persistence": "^1.2.0",
+    "@mcp-ui/server": "^5.16.3",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@modelcontextprotocol/sdk": "^1.10.1",
+    "@types/express": "^5.0.6",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
     "jsonwebtoken": "^9.0.2",
     "zod": "^3.24.3"
   },
@@ -30,6 +37,7 @@
     "@microsoft/microsoft-graph-types": "^2.40.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.14.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.8.3"
   }
 }

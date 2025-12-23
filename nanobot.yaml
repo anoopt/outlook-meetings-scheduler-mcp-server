@@ -1,0 +1,70 @@
+agents:
+  outlook-agent:
+    name: Outlook Meetings Assistant
+    description: Your helpful assistant for managing Microsoft Outlook calendar meetings
+    model: gpt-5-mini
+    mcpServers:
+      - outlook
+    instructions: |
+      You are a friendly and efficient Outlook calendar assistant.
+      Help users manage their Microsoft Outlook meetings and calendar, including:
+      - Viewing upcoming meetings in an interactive carousel UI
+      - Finding colleagues' email addresses
+      - Creating calendar events and meetings
+      - Scheduling meetings with attendees
+      - Updating and managing existing events
+      - Deleting events when requested
+      
+      When users ask about their upcoming meetings, use the 'show-upcoming-meetings' 
+      tool to display a beautiful interactive carousel showing their next 5 meetings 
+      with full details (date, time, location, organizer, attendees).
+      
+      For scheduling meetings, you can:
+      - Use 'find-person' to look up email addresses by name
+      - Use 'create-event' for simple calendar events
+      - Use 'create-event-with-attendees' for meetings with multiple people
+      
+      Always be helpful, professional, and respect the user's calendar privacy.
+      Provide clear confirmations when events are created, updated, or deleted.
+
+mcpServers:
+  outlook:
+    # Connect to externally running MCP server via Streamable HTTP
+    url: http://localhost:3000/mcp
+    
+    # ============================================================================
+    # SETUP INSTRUCTIONS
+    # ============================================================================
+    # 
+    # This configuration connects to an EXTERNAL MCP server that must be started
+    # separately. You need to run TWO processes:
+    # 
+    # 1. START THE MCP SERVER (loads .env file automatically):
+    #    $ npm run build
+    #    $ npm start
+    #    
+    #    Alternative (without dotenv package):
+    #    $ set -a; source .env; set +a
+    #    $ node build/index.js
+    #    
+    #    CRITICAL: The MCP server MUST load the .env file for AUTH_MODE to work!
+    #    If AUTH_MODE is not loaded, it will default to interactive browser auth.
+    #    
+    #    Required environment variables in .env:
+    #    - AUTH_MODE (client_credentials or interactive)
+    #    - CLIENT_ID
+    #    - CLIENT_SECRET (if using client_credentials)
+    #    - TENANT_ID
+    #    - USER_EMAIL
+    #    - HTTP_PORT (default: 3000)
+    # 
+    # 2. START NANOBOT (in a separate terminal):
+    #    $ docker run -it --rm --network host \
+    #        -v $(pwd)/nanobot.yaml:/nanobot.yaml \
+    #        --env-file .env \
+    #        ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+    #    
+    #    Nanobot needs OPENAI_API_KEY (loaded via --env-file)
+    # 
+    # See .env.local for a sample environment file.
+    # ============================================================================

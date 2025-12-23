@@ -136,6 +136,7 @@ export interface AuthConfig {
   accessToken?: string;
   expiresOn?: Date;
   redirectUri?: string;
+  preferDeviceCode?: boolean; // Use device code flow instead of browser auth (better for HTTP mode/containers)
 }
 
 export class AuthManager {
@@ -198,18 +199,10 @@ export class AuthManager {
           unsafeAllowUnencryptedStorage: true // Allow unencrypted storage on Linux without libsecret
         };
 
-        // Try Interactive Browser first (opens browser automatically)
-        try {
-          this.credential = new InteractiveBrowserCredential({
-            tenantId: tenantId,
-            clientId: clientId,
-            redirectUri: this.config.redirectUri || DEFAULT_REDIRECT_URI,
-            tokenCachePersistenceOptions: tokenCachePersistenceOptions,
-          });
-          logger.info("Using interactive browser authentication");
-        } catch (error) {
-          // Fallback to Device Code flow if browser auth is not available
-          logger.info("Browser authentication not available, using device code flow");
+        // In HTTP mode (or when preferDeviceCode is set), use Device Code flow
+        // because the browser callback won't work in containers/Codespaces
+        if (this.config.preferDeviceCode) {
+          logger.info("Using device code flow (HTTP mode or preferDeviceCode set)");
           this.credential = new DeviceCodeCredential({
             tenantId: tenantId,
             clientId: clientId,
@@ -222,6 +215,135 @@ export class AuthManager {
               return Promise.resolve();
             },
           });
+        } else {
+          // Try Interactive Browser first (opens browser automatically) - works best in stdio mode
+          try {
+            this.credential = new InteractiveBrowserCredential({
+              tenantId: tenantId,
+              clientId: clientId,
+              redirectUri: this.config.redirectUri || DEFAULT_REDIRECT_URI,
+              tokenCachePersistenceOptions: tokenCachePersistenceOptions,
+              browserCustomizationOptions: {
+                successMessage: `
+                  <!DOCTYPE html>
+                  <html lang="en" dir="ltr">
+                    <head>
+                      <meta charset="UTF-8">
+                      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                      <title>Authentication Successful</title>
+                      <link rel="stylesheet" href="https://res-1.cdn.office.net/files/fabric-cdn-prod_20230815.002/office-ui-fabric-core/11.1.0/css/fabric.min.css">
+                      <style>
+                        :root {
+                          --themePrimary: #0078d4;
+                          --themeDark: #005a9e;
+                          --themeDarker: #004578;
+                          --themeLight: #c7e0f4;
+                          --neutralPrimary: #323130;
+                          --neutralSecondary: #605e5c;
+                          --neutralTertiary: #a19f9d;
+                          --neutralLight: #edebe9;
+                          --neutralLighter: #f3f2f1;
+                          --white: #ffffff;
+                          --elevation8: 0 3.2px 7.2px 0 rgba(0,0,0,.132), 0 0.6px 1.8px 0 rgba(0,0,0,.108);
+                        }
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body.ms-Fabric {
+                          font-family: 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+                          -webkit-font-smoothing: antialiased;
+                          display: flex;
+                          justify-content: center;
+                          align-items: center;
+                          min-height: 100vh;
+                          background-color: var(--neutralLighter);
+                          color: var(--neutralPrimary);
+                        }
+                        .success-container {
+                          text-align: center;
+                          padding: 48px;
+                          background: var(--white);
+                          border-radius: 4px;
+                          box-shadow: var(--elevation8);
+                          max-width: 400px;
+                          margin: 20px;
+                        }
+                        .success-icon {
+                          width: 64px;
+                          height: 64px;
+                          margin: 0 auto 24px;
+                          background: #107c10;
+                          border-radius: 50%;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                        }
+                        .success-icon .ms-Icon {
+                          font-size: 32px;
+                          color: var(--white);
+                        }
+                        h1 {
+                          font-size: 24px;
+                          font-weight: 600;
+                          color: var(--neutralPrimary);
+                          margin-bottom: 8px;
+                        }
+                        p {
+                          font-size: 14px;
+                          color: var(--neutralSecondary);
+                          margin-bottom: 24px;
+                        }
+                        .shortcut-hint {
+                          padding: 12px 16px;
+                          background: var(--neutralLighter);
+                          border-radius: 4px;
+                          font-size: 13px;
+                          color: var(--neutralSecondary);
+                        }
+                        kbd {
+                          display: inline-block;
+                          padding: 2px 8px;
+                          background: var(--white);
+                          border: 1px solid var(--neutralLight);
+                          border-radius: 4px;
+                          font-family: 'Segoe UI', monospace;
+                          font-size: 12px;
+                          color: var(--neutralPrimary);
+                          box-shadow: 0 1px 0 rgba(0,0,0,0.1);
+                        }
+                      </style>
+                    </head>
+                    <body class="ms-Fabric" dir="ltr">
+                      <div class="success-container">
+                        <div class="success-icon">
+                          <i class="ms-Icon ms-Icon--CheckMark" aria-hidden="true"></i>
+                        </div>
+                        <h1>Authentication Successful!</h1>
+                        <p>You can now close this tab and return to the app.</p>
+                        <div class="shortcut-hint">
+                          Press <kbd>Ctrl</kbd> + <kbd>W</kbd> or <kbd>Cmd</kbd> + <kbd>W</kbd> to close
+                        </div>
+                      </div>
+                    </body>
+                  </html>
+                `
+              }
+            });
+            logger.info("Using interactive browser authentication");
+          } catch (error) {
+            // Fallback to Device Code flow if browser auth is not available
+            logger.info("Browser authentication not available, using device code flow");
+            this.credential = new DeviceCodeCredential({
+              tenantId: tenantId,
+              clientId: clientId,
+              tokenCachePersistenceOptions: tokenCachePersistenceOptions,
+              userPromptCallback: (info: DeviceCodeInfo) => {
+                this.deviceCodeInfo = info; // Store for access by tools
+                this.isAuthenticating = true;
+                logger.info(`Device code authentication required: ${info.userCode} at ${info.verificationUri}`);
+                // Don't use console.log - it interferes with MCP protocol
+                return Promise.resolve();
+              },
+            });
+          }
         }
         break;
 

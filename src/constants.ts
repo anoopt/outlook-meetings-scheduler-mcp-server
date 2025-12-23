@@ -13,5 +13,6 @@ export const DEFAULT_CLIENT_ID = "ca696137-503f-4489-bdf4-7cb76e272639";
 // Default tenant ID (common for multi-tenant)
 export const DEFAULT_TENANT_ID = "common";
 
-// Default redirect URI for local interactive auth (no port required)
-export const DEFAULT_REDIRECT_URI = "http://localhost";
+// Default redirect URI for local interactive auth
+// Use a specific port (8400) to avoid conflicts with the MCP HTTP server
+export const DEFAULT_REDIRECT_URI = "http://localhost:8400";
