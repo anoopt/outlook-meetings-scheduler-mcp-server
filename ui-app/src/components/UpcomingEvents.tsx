@@ -172,7 +172,7 @@ export function UpcomingEvents() {
             <div className={styles.detailRow}>
               <Clock24Regular className={styles.icon} />
               <Body1>
-                {formatDateTime(event.start.dateTime)} - {formatDateTime(event.end.dateTime)}
+                Until {formatDateTime(event.end.dateTime)}
               </Body1>
             </div>
             

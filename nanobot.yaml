@@ -1,0 +1,25 @@
+# Nanobot MCP Client Configuration
+# This configuration file allows you to test the Outlook Meetings Scheduler MCP server
+# with nanobot.ai as an MCP client, including the new UI resources.
+
+# MCP Server Configuration
+mcpServers:
+  outlook-meetings-scheduler:
+    # Command to run the MCP server
+    command: node
+    args:
+      - build/index.js
+    
+    # Environment variables for the MCP server
+    # These should be defined in your .env file
+    env:
+      AUTHENTICATION_MODE: ${AUTHENTICATION_MODE}
+      TENANT_ID: ${TENANT_ID}
+      CLIENT_ID: ${CLIENT_ID}
+      CLIENT_SECRET: ${CLIENT_SECRET}
+      USER_EMAIL: ${USER_EMAIL}
+      UI_SERVER_URL: ${UI_SERVER_URL}
+
+# UI Server Configuration (optional)
+# Set this to the URL where your React UI app is running
+# Default: http://localhost:5173

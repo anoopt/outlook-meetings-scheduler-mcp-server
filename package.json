@@ -6,7 +6,10 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && chmod 755 build/*.js"
+    "build": "tsc && chmod 755 build/*.js",
+    "build:ui": "cd ui-app && npm install && npm run build",
+    "dev:ui": "cd ui-app && npm install && npm run dev",
+    "build:all": "npm run build && npm run build:ui"
   },
   "bin": {
     "outlook-meetings-scheduler": "./build/index.js"

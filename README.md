@@ -797,12 +797,58 @@ curl -X POST \
 # Install dependencies
 npm install
 
-# Build the project
+# Build the MCP server
 npm run build
+
+# Build the UI app
+npm run build:ui
+
+# Build both MCP server and UI app
+npm run build:all
 
 # Docker build
 docker build -t mcp/outlook-meetings-scheduler .
 ```
+
+## Testing with Nanobot
+
+You can test the MCP server and UI resources using [nanobot.ai](https://nanobot.ai) as an MCP client.
+
+### Prerequisites
+
+1. Build the MCP server: `npm run build`
+2. Start the UI server: `npm run dev:ui` (in a separate terminal)
+3. Configure your environment variables in `.env` (use `.env.local` as a template)
+
+### Running with Nanobot
+
+#### Local Machine
+
+```bash
+docker run -it --rm --network host \
+  -v $(pwd)/nanobot.yaml:/nanobot.yaml \
+  --env-file .env \
+  ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+```
+
+#### GitHub Codespaces
+
+```bash
+docker run -it --rm --network host \
+  -v /workspaces/outlook-meetings-scheduler-mcp-server/nanobot.yaml:/nanobot.yaml \
+  --env-file /workspaces/outlook-meetings-scheduler-mcp-server/.env \
+  ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+```
+
+**Note:** In GitHub Codespaces, you'll need to update `UI_SERVER_URL` in your `.env` file to use the forwarded port URL (e.g., `https://your-codespace-name-5173.app.github.dev`).
+
+### Testing UI Resources
+
+Once nanobot is running, you can test the UI resources:
+
+1. Ask nanobot to access the resource: `ui://outlook-meetings/upcoming-events`
+2. Nanobot will display the UI with your upcoming calendar events
+3. Test the people search UI: `ui://outlook-meetings/people/John`
 
 ## License
 

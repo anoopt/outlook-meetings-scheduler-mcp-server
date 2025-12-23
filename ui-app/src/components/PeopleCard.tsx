@@ -134,12 +134,13 @@ export function PeopleCard() {
   }
 
   const getEmail = (person: Person) => {
-    return person.mail || person.userPrincipalName || 'No email available';
+    return person.mail || person.userPrincipalName || 'Email not provided';
   };
 
   const getInitials = (name: string) => {
     return name
       .split(' ')
+      .filter(n => n.length > 0)
       .map((n) => n[0])
       .join('')
       .toUpperCase()
