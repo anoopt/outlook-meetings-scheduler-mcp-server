@@ -7,6 +7,7 @@ This guide walks you through testing the Outlook Meetings Scheduler MCP server w
 - Node.js 18+ installed
 - Docker installed (for nanobot)
 - Azure AD credentials (see main README for setup)
+- OpenAI API key (for nanobot)
 
 ## Step-by-Step Testing Instructions
 
@@ -17,8 +18,12 @@ This guide walks you through testing the Outlook Meetings Scheduler MCP server w
    cp .env.example .env
    ```
 
-2. Edit `.env` and fill in your Azure AD credentials:
+2. Edit `.env` and fill in your credentials:
    ```bash
+   # Required by nanobot
+   OPENAI_API_KEY=your-openai-api-key-here
+   
+   # Azure AD configuration
    AUTHENTICATION_MODE=interactive
    TENANT_ID=your-tenant-id-here
    CLIENT_ID=your-client-id-here
@@ -26,6 +31,8 @@ This guide walks you through testing the Outlook Meetings Scheduler MCP server w
    UI_SERVER_URL=http://localhost:5173
    ```
 
+   > **Get OpenAI API Key**: Visit [OpenAI Platform](https://platform.openai.com/api-keys) to create an API key
+   
    > **Note for GitHub Codespaces**: After starting the UI server (step 3), Codespaces will provide a forwarded URL. Update `UI_SERVER_URL` to use that URL (e.g., `https://your-codespace-name-5173.app.github.dev`)
 
 ### Step 2: Build the MCP Server
@@ -166,6 +173,13 @@ The MCP server should create the event and return confirmation with the event de
 ```bash
 npm run build
 ```
+
+### Issue: Nanobot fails to start or shows authentication errors
+
+**Solution**: 
+1. Verify `OPENAI_API_KEY` is set in your `.env` file
+2. Get an API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+3. Ensure the API key has sufficient credits/quota
 
 ### Issue: "UI not displaying" or "Failed to load UI"
 
