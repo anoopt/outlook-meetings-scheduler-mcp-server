@@ -19,8 +19,9 @@ The server supports **two transport modes**: stdio (simpler, 2 terminals) and HT
 - **Use**: `nanobot.yaml` configuration
 
 ### HTTP Mode (Original Setup)
-- **Separate server**: MCP server runs independently
+- **Separate server**: MCP server runs independently using Hono framework
 - **Multiple clients**: Can connect multiple nanobot instances
+- **Better hot reload**: Hono provides cleaner reconnections when making code changes
 - **Use**: `nanobot-http.yaml` configuration
 - **Requires**: 3 terminals (UI + MCP server + nanobot)
 

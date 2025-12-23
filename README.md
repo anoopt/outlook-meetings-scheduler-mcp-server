@@ -153,7 +153,9 @@ docker run -it --rm --network host \
 
 ### 2. HTTP/SSE Transport
 
-The server runs as a standalone HTTP service. The MCP client connects to it via HTTP. This allows the server to be run independently and supports multiple clients.
+The server runs as a standalone HTTP service using [Hono](https://hono.dev/) - a modern, lightweight web framework. The MCP client connects to it via HTTP. This allows the server to be run independently and supports multiple clients.
+
+**Framework**: Hono (optimized for better hot reload support and lighter weight than Express)
 
 **Configuration**: Use `nanobot-http.yaml`
 
@@ -173,7 +175,7 @@ docker run -it --rm --network host \
   ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
 ```
 
-The HTTP server runs on port 3000 by default (configurable via `HTTP_PORT` environment variable).
+The HTTP server runs on port 3000 by default (configurable via `HTTP_PORT` environment variable). Hono provides better development experience with cleaner hot reloads when making code changes.
 
 ## Setup
 
