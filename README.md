@@ -818,7 +818,7 @@ You can test the MCP server and UI resources using [nanobot.ai](https://nanobot.
 
 1. Build the MCP server: `npm run build`
 2. Start the UI server: `npm run dev:ui` (in a separate terminal)
-3. Configure your environment variables in `.env` (use `.env.local` as a template)
+3. Configure your environment variables in `.env` (use `.env.example` as a template)
 
 ### Running with Nanobot
 
