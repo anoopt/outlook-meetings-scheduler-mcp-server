@@ -198,6 +198,104 @@ export class AuthManager {
           unsafeAllowUnencryptedStorage: true // Allow unencrypted storage on Linux without libsecret
         };
 
+        // Custom styled success message with Fluent-inspired design
+        const successHtml = `
+          <div style="
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+            margin: 0;
+            padding: 20px;
+          ">
+            <div style="
+              background: white;
+              border-radius: 12px;
+              box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+              padding: 48px;
+              text-align: center;
+              max-width: 420px;
+            ">
+              <div style="
+                width: 72px;
+                height: 72px;
+                background: linear-gradient(135deg, #10b981, #059669);
+                border-radius: 50%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 0 auto 24px;
+              ">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <h1 style="
+                font-size: 24px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin: 0 0 12px 0;
+              ">Authentication Successful!</h1>
+              <p style="
+                font-size: 16px;
+                color: #666;
+                line-height: 1.5;
+                margin: 0 0 12px 0;
+              ">
+                You have signed in to Outlook Meetings Scheduler.<br>
+                You can close this window now.
+              </p>
+              <p style="
+                font-size: 13px;
+                color: #999;
+                margin: 0 0 32px 0;
+              ">
+                Press <kbd style="
+                  background: #e5e5e5;
+                  padding: 2px 6px;
+                  border-radius: 4px;
+                  font-family: monospace;
+                  font-size: 12px;
+                ">Ctrl</kbd> + <kbd style="
+                  background: #e5e5e5;
+                  padding: 2px 6px;
+                  border-radius: 4px;
+                  font-family: monospace;
+                  font-size: 12px;
+                ">W</kbd> to close this tab
+              </p>
+              <div style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                padding: 16px;
+                background: #f5f5f5;
+                border-radius: 8px;
+              ">
+                <div style="
+                  width: 32px;
+                  height: 32px;
+                  background: #0078d4;
+                  border-radius: 6px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                ">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </div>
+                <span style="font-size: 14px; font-weight: 500; color: #333;">Outlook Meetings Scheduler</span>
+              </div>
+            </div>
+          </div>
+        `;
+
         // Try Interactive Browser first (opens browser automatically)
         try {
           this.credential = new InteractiveBrowserCredential({
@@ -205,6 +303,10 @@ export class AuthManager {
             clientId: clientId,
             redirectUri: this.config.redirectUri || DEFAULT_REDIRECT_URI,
             tokenCachePersistenceOptions: tokenCachePersistenceOptions,
+            browserCustomizationOptions: {
+              successMessage: successHtml,
+              errorMessage: "Authentication failed. Please close this window and try again."
+            }
           });
           logger.info("Using interactive browser authentication");
         } catch (error) {
@@ -286,7 +388,8 @@ export class AuthManager {
       ? [
         "https://graph.microsoft.com/Calendars.ReadWrite",
         "https://graph.microsoft.com/People.Read",
-        "https://graph.microsoft.com/User.Read"
+        "https://graph.microsoft.com/User.Read",
+        "https://graph.microsoft.com/User.ReadBasic.All"  // Required for reading other users' photos
       ]
       : ["https://graph.microsoft.com/.default"];
 

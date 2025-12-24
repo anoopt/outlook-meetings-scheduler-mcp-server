@@ -7,6 +7,10 @@ import {
   makeStyles,
   tokens,
   Spinner,
+  AvatarGroup,
+  AvatarGroupItem,
+  AvatarGroupPopover,
+  partitionAvatarGroupItems,
 } from '@fluentui/react-components';
 import {
   Calendar24Regular,
@@ -20,29 +24,30 @@ const useStyles = makeStyles({
   container: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalL,
-    padding: tokens.spacingVerticalXXL,
-    maxWidth: '800px',
-    margin: '0 auto',
+    gap: tokens.spacingVerticalM,
+    padding: tokens.spacingVerticalS,
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalM,
+    boxSizing: 'border-box',
   },
   title: {
-    fontSize: tokens.fontSizeHero800,
+    fontSize: tokens.fontSizeBase500,
     fontWeight: tokens.fontWeightSemibold,
-    marginBottom: tokens.spacingVerticalL,
+    marginBottom: tokens.spacingVerticalS,
   },
   eventCard: {
-    padding: tokens.spacingVerticalL,
+    padding: tokens.spacingVerticalS,
   },
   eventHeader: {
     display: 'flex',
     alignItems: 'center',
     gap: tokens.spacingHorizontalM,
-    marginBottom: tokens.spacingVerticalM,
+    marginBottom: tokens.spacingVerticalS,
   },
   eventDetails: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
+    gap: tokens.spacingVerticalXS,
   },
   detailRow: {
     display: 'flex',
@@ -51,46 +56,55 @@ const useStyles = makeStyles({
   },
   icon: {
     color: tokens.colorBrandForeground1,
+    flexShrink: 0,
   },
   loadingContainer: {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: '400px',
+    minHeight: '100px',
   },
   errorContainer: {
-    padding: tokens.spacingVerticalXXL,
+    padding: tokens.spacingVerticalM,
     textAlign: 'center',
     color: tokens.colorPaletteRedForeground1,
   },
   noEvents: {
-    padding: tokens.spacingVerticalXXL,
+    padding: tokens.spacingVerticalM,
     textAlign: 'center',
     color: tokens.colorNeutralForeground3,
   },
+  avatarGroup: {
+    marginLeft: tokens.spacingHorizontalS,
+  },
 });
+
+interface Attendee {
+  name: string;
+  email: string;
+  photoDataUrl?: string | null;
+}
 
 interface Event {
   id: string;
   subject: string;
   start: {
     dateTime: string;
-    timeZone: string;
+    timeZone?: string;
   };
   end: {
     dateTime: string;
-    timeZone: string;
+    timeZone?: string;
   };
   location?: {
     displayName: string;
   };
-  attendees?: Array<{
-    emailAddress: {
-      name: string;
-      address: string;
-    };
-  }>;
+  attendeeCount?: number;
+  attendees?: Attendee[];
 }
+
+// API base URL - defaults to localhost:3000 for development
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 export function UpcomingEvents() {
   const styles = useStyles();
@@ -99,25 +113,58 @@ export function UpcomingEvents() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Parse events data from URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const eventsData = urlParams.get('events');
+    const fetchData = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      // First try to get data via dataId (new approach)
+      const dataId = urlParams.get('dataId');
+      if (dataId) {
+        try {
+          console.log(`Fetching events data from API with dataId: ${dataId}`);
+          const response = await fetch(`${API_BASE_URL}/api/data?id=${dataId}`);
+          if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+          }
+          const fetchedEvents = await response.json();
+          console.log('Fetched events data:', fetchedEvents);
+          fetchedEvents.forEach((event: Event) => {
+            console.log(`Event: ${event.subject}, attendees:`, event.attendees?.map(a => ({
+              name: a.name,
+              photoDataUrl: a.photoDataUrl ? a.photoDataUrl.substring(0, 100) + '...' : 'none'
+            })));
+          });
+          setEvents(fetchedEvents);
+          setLoading(false);
+          return;
+        } catch (err) {
+          console.error('Error fetching events from API:', err);
+          setError('Failed to fetch events data from server');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Fallback to URL-embedded data (legacy approach)
+      const eventsData = urlParams.get('events');
+      if (!eventsData) {
+        setError('No events data provided');
+        setLoading(false);
+        return;
+      }
 
-    if (!eventsData) {
-      setError('No events data provided');
-      setLoading(false);
-      return;
-    }
+      try {
+        const parsedEvents = JSON.parse(decodeURIComponent(eventsData));
+        console.log('Parsed events data (legacy):', parsedEvents);
+        setEvents(parsedEvents);
+      } catch (err) {
+        setError('Failed to parse events data');
+        console.error('Error parsing events:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    try {
-      const parsedEvents = JSON.parse(decodeURIComponent(eventsData));
-      setEvents(parsedEvents);
-    } catch (err) {
-      setError('Failed to parse events data');
-      console.error('Error parsing events:', err);
-    } finally {
-      setLoading(false);
-    }
+    fetchData();
   }, []);
 
   const formatDateTime = (dateTimeStr: string) => {
@@ -186,14 +233,68 @@ export function UpcomingEvents() {
             {event.attendees && event.attendees.length > 0 && (
               <div className={styles.detailRow}>
                 <People24Regular className={styles.icon} />
-                <Body1>
-                  {event.attendees.length} attendee{event.attendees.length !== 1 ? 's' : ''}
-                </Body1>
+                <Body1>{event.attendees.length} attendee{event.attendees.length !== 1 ? 's' : ''}</Body1>
+                <AttendeeAvatarGroup attendees={event.attendees} />
               </div>
             )}
           </div>
         </Card>
       ))}
     </div>
+  );
+}
+
+// Helper function to trigger find-person tool via postMessage
+function triggerFindPerson(name: string) {
+  console.log(`Triggering find-person for: ${name}`);
+  window.parent.postMessage({
+    type: 'tool',
+    payload: {
+      toolName: 'find-person',
+      params: { name }
+    }
+  }, '*');
+}
+
+// Component to render attendee avatars as a stack with click functionality
+function AttendeeAvatarGroup({ attendees }: { attendees: Attendee[] }) {
+  const styles = useStyles();
+  
+  const { inlineItems, overflowItems } = partitionAvatarGroupItems({
+    items: attendees.map(a => a.name),
+    maxInlineItems: 4,
+  });
+
+  return (
+    <AvatarGroup layout="stack" size={28} className={styles.avatarGroup}>
+      {inlineItems.map((name, index) => {
+        const attendee = attendees.find(a => a.name === name);
+        return (
+          <AvatarGroupItem
+            key={attendee?.email || index}
+            name={name}
+            image={attendee?.photoDataUrl ? { src: attendee.photoDataUrl } : undefined}
+            onClick={() => triggerFindPerson(name)}
+            style={{ cursor: 'pointer' }}
+          />
+        );
+      })}
+      {overflowItems && overflowItems.length > 0 && (
+        <AvatarGroupPopover>
+          {overflowItems.map((name, index) => {
+            const attendee = attendees.find(a => a.name === name);
+            return (
+              <AvatarGroupItem
+                key={attendee?.email || `overflow-${index}`}
+                name={name}
+                image={attendee?.photoDataUrl ? { src: attendee.photoDataUrl } : undefined}
+                onClick={() => triggerFindPerson(name)}
+                style={{ cursor: 'pointer' }}
+              />
+            );
+          })}
+        </AvatarGroupPopover>
+      )}
+    </AvatarGroup>
   );
 }

@@ -186,6 +186,109 @@ export default class Graph {
         return null;
     };
 
+    /**
+     * Fetch a user's profile photo by email/userId and return as base64 data URL
+     * @param emailOrId - Email address or user ID
+     * @returns Base64 data URL of the photo, or null if not available
+     */
+    private async getPhotoByEmail(client: Client, emailOrId: string): Promise<string | null> {
+        console.log(`>>> [getPhotoByEmail] START for ${emailOrId}`);
+        try {
+            console.log(`>>> [getPhotoByEmail] Calling Graph API: /users/${emailOrId}/photo/$value`);
+            const photoBlob = await client
+                .api(`/users/${emailOrId}/photo/$value`)
+                .get();
+
+            console.log(`>>> [getPhotoByEmail] Got response, photoBlob type:`, typeof photoBlob, photoBlob ? 'has data' : 'no data');
+            if (photoBlob) {
+                const buffer = Buffer.from(await photoBlob.arrayBuffer());
+                const base64Photo = buffer.toString('base64');
+                const mimeType = photoBlob.type || 'image/jpeg';
+                console.log(`>>> [getPhotoByEmail] SUCCESS: ${buffer.length} bytes`);
+                return `data:${mimeType};base64,${base64Photo}`;
+            }
+            console.log(`>>> [getPhotoByEmail] Photo blob was empty`);
+        } catch (error: any) {
+            console.log(`>>> [getPhotoByEmail] CATCH ERROR:`, error?.code, error?.message);
+            console.log(`>>> [getPhotoByEmail] Full error:`, JSON.stringify(error, null, 2));
+        }
+        console.log(`>>> [getPhotoByEmail] Returning null`);
+        return null;
+    }
+
+    /**
+     * Fetch photos for an array of people/users and add them as base64 data URLs
+     * Can be used for people search results or meeting attendees
+     */
+    async addPhotosToResults(people: any[]): Promise<any[]> {
+        console.log('>>> addPhotosToResults called with', people.length, 'people');
+        const client: Client | null = await this.getClient();
+        if (!client) {
+            console.log('>>> No Graph client available!');
+            logger.info('No Graph client available for fetching photos');
+            return people;
+        }
+
+        console.log('>>> Got Graph client, fetching photos...');
+        logger.info(`Fetching photos for ${people.length} people...`);
+        const results = await Promise.all(
+            people.map(async (person) => {
+                const userId = person.id || person.userPrincipalName || person.mail;
+                console.log(`>>> Fetching photo for ${person.displayName} using userId: ${userId}`);
+                logger.info(`Attempting to fetch photo for: ${person.displayName} (userId: ${userId})`);
+                if (!userId) {
+                    logger.info(`No userId found for ${person.displayName}`);
+                    return person;
+                }
+
+                const photoDataUrl = await this.getPhotoByEmail(client, userId);
+                if (photoDataUrl) {
+                    console.log(`>>> ✅ Got photo for ${person.displayName} (${photoDataUrl.length} chars)`);
+                    logger.info(`✅ Got photo for ${person.displayName} (${photoDataUrl.length} chars)`);
+                    return { ...person, photoDataUrl };
+                }
+                console.log(`>>> ❌ No photo for ${person.displayName}`);
+                logger.info(`❌ No photo found for ${person.displayName}`);
+                return person;
+            })
+        );
+        return results;
+    };
+
+    /**
+     * Add photos to meeting attendees
+     * @param meetings - Array of meeting objects from Graph API
+     * @returns Meetings with attendee photos added
+     */
+    async addAttendeesPhotosToMeetings(meetings: any[]): Promise<any[]> {
+        const client: Client | null = await this.getClient();
+        if (!client) return meetings;
+
+        const results = await Promise.all(
+            meetings.map(async (meeting) => {
+                if (!meeting.attendees || meeting.attendees.length === 0) {
+                    return meeting;
+                }
+
+                const attendeesWithPhotos = await Promise.all(
+                    meeting.attendees.map(async (attendee: any) => {
+                        const email = attendee.emailAddress?.address;
+                        if (!email) return attendee;
+
+                        const photoDataUrl = await this.getPhotoByEmail(client, email);
+                        if (photoDataUrl) {
+                            return { ...attendee, photoDataUrl };
+                        }
+                        return attendee;
+                    })
+                );
+
+                return { ...meeting, attendees: attendeesWithPhotos };
+            })
+        );
+        return results;
+    };
+
     private async getClient(): Promise<Client | null> {
         try {
             const authProvider = this.authManager.getGraphAuthProvider();

@@ -20,18 +20,19 @@ const useStyles = makeStyles({
   container: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalL,
-    padding: tokens.spacingVerticalXXL,
-    maxWidth: '800px',
-    margin: '0 auto',
+    gap: tokens.spacingVerticalM,
+    padding: tokens.spacingVerticalS,
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalM,
+    boxSizing: 'border-box',
   },
   title: {
-    fontSize: tokens.fontSizeHero800,
+    fontSize: tokens.fontSizeBase500,
     fontWeight: tokens.fontWeightSemibold,
-    marginBottom: tokens.spacingVerticalL,
+    marginBottom: tokens.spacingVerticalS,
   },
   personCard: {
-    padding: tokens.spacingVerticalL,
+    padding: tokens.spacingVerticalS,
   },
   personHeader: {
     display: 'flex',
@@ -41,8 +42,8 @@ const useStyles = makeStyles({
   personDetails: {
     display: 'flex',
     flexDirection: 'column',
-    gap: tokens.spacingVerticalS,
-    marginTop: tokens.spacingVerticalM,
+    gap: tokens.spacingVerticalXS,
+    marginTop: tokens.spacingVerticalS,
   },
   detailRow: {
     display: 'flex',
@@ -51,20 +52,21 @@ const useStyles = makeStyles({
   },
   icon: {
     color: tokens.colorBrandForeground1,
+    flexShrink: 0,
   },
   loadingContainer: {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: '400px',
+    minHeight: '100px',
   },
   errorContainer: {
-    padding: tokens.spacingVerticalXXL,
+    padding: tokens.spacingVerticalM,
     textAlign: 'center',
     color: tokens.colorPaletteRedForeground1,
   },
   noPeople: {
-    padding: tokens.spacingVerticalXXL,
+    padding: tokens.spacingVerticalM,
     textAlign: 'center',
     color: tokens.colorNeutralForeground3,
   },
@@ -79,7 +81,11 @@ interface Person {
   department?: string;
   officeLocation?: string;
   businessPhones?: string[];
+  photoDataUrl?: string | null;
 }
+
+// API base URL - defaults to localhost:3000 for development
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 export function PeopleCard() {
   const styles = useStyles();
@@ -88,25 +94,55 @@ export function PeopleCard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Parse people data from URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const peopleData = urlParams.get('people');
+    const fetchData = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      // First try to get data via dataId (new approach)
+      const dataId = urlParams.get('dataId');
+      if (dataId) {
+        try {
+          console.log(`Fetching people data from API with dataId: ${dataId}`);
+          const response = await fetch(`${API_BASE_URL}/api/data?id=${dataId}`);
+          if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+          }
+          const fetchedPeople = await response.json();
+          console.log('Fetched people data:', fetchedPeople);
+          fetchedPeople.forEach((person: Person) => {
+            console.log(`Person: ${person.displayName}, photoDataUrl: ${person.photoDataUrl ? person.photoDataUrl.substring(0, 100) + '...' : 'none'}`);
+          });
+          setPeople(fetchedPeople);
+          setLoading(false);
+          return;
+        } catch (err) {
+          console.error('Error fetching people from API:', err);
+          setError('Failed to fetch people data from server');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Fallback to URL-embedded data (legacy approach)
+      const peopleData = urlParams.get('people');
+      if (!peopleData) {
+        setError('No people data provided');
+        setLoading(false);
+        return;
+      }
 
-    if (!peopleData) {
-      setError('No people data provided');
-      setLoading(false);
-      return;
-    }
+      try {
+        const parsedPeople = JSON.parse(decodeURIComponent(peopleData));
+        console.log('Parsed people data (legacy):', parsedPeople);
+        setPeople(parsedPeople);
+      } catch (err) {
+        setError('Failed to parse people data');
+        console.error('Error parsing people:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    try {
-      const parsedPeople = JSON.parse(decodeURIComponent(peopleData));
-      setPeople(parsedPeople);
-    } catch (err) {
-      setError('Failed to parse people data');
-      console.error('Error parsing people:', err);
-    } finally {
-      setLoading(false);
-    }
+    fetchData();
   }, []);
 
   if (loading) {
@@ -159,6 +195,7 @@ export function PeopleCard() {
               initials={getInitials(person.displayName)}
               size={56}
               color="colorful"
+              image={person.photoDataUrl ? { src: person.photoDataUrl } : undefined}
             />
             <div>
               <Text weight="semibold" size={500}>{person.displayName}</Text>

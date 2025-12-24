@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { createUIResource } from "@mcp-ui/server";
 import { getGraphConfig } from "../utils/graph-config.js";
 import { createEventsUIUrl, createPeopleUIUrl } from "./ui-resources.js";
 
@@ -56,14 +57,15 @@ export function registerUIResources(server: McpServer): void {
         // Create the external URL with events data
         const uiUrl = createEventsUIUrl(events);
 
+        // Use createUIResource from @mcp-ui/server for proper UI rendering
+        const uiResource = createUIResource({
+          uri: "ui://outlook-meetings/upcoming-events",
+          content: { type: 'externalUrl', iframeUrl: uiUrl },
+          encoding: 'text',
+        });
+
         return {
-          contents: [
-            {
-              uri: "ui://outlook-meetings/upcoming-events",
-              mimeType: "text/uri-list",
-              text: uiUrl,
-            },
-          ],
+          contents: [uiResource.resource],
         };
       } catch (error) {
         return {
@@ -132,14 +134,15 @@ export function registerUIResources(server: McpServer): void {
         // Create the external URL with people data
         const uiUrl = createPeopleUIUrl(people);
 
+        // Use createUIResource from @mcp-ui/server for proper UI rendering
+        const uiResource = createUIResource({
+          uri: `ui://outlook-meetings/people/${encodeURIComponent(query)}`,
+          content: { type: 'externalUrl', iframeUrl: uiUrl },
+          encoding: 'text',
+        });
+
         return {
-          contents: [
-            {
-              uri: uri.toString(),
-              mimeType: "text/uri-list",
-              text: uiUrl,
-            },
-          ],
+          contents: [uiResource.resource],
         };
       } catch (error) {
         return {

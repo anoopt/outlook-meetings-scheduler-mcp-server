@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { createUIResource } from "@mcp-ui/server";
 import { registerTool } from "../utils/tool-registration.js";
 import { getGraphConfig } from "../utils/graph-config.js";
+import { createEventsUIUrl } from "../resources/ui-resources.js";
 
 /**
  * Register event retrieval tools with the MCP server
@@ -143,6 +145,29 @@ Event URL: ${eventUrl}
           ],
         };
       }
+
+      // Add photos to meeting attendees using the proven method
+      const eventsWithPhotos = await graph.addAttendeesPhotosToMeetings(events);
+
+      // Enrich events for UI (simplified structure with photos)
+      const enrichedEvents = eventsWithPhotos.map((event: any) => {
+        const attendeesWithPhotos = event.attendees?.map((attendee: any) => {
+          return {
+            name: attendee.emailAddress?.name || 'Unknown',
+            email: attendee.emailAddress?.address,
+            photoDataUrl: attendee.photoDataUrl || null,
+          };
+        }) || [];
+
+        return {
+          id: event.id,
+          subject: event.subject,
+          start: event.start,
+          end: event.end,
+          location: event.location?.displayName ? { displayName: event.location.displayName } : undefined,
+          attendees: attendeesWithPhotos,
+        };
+      });
   
       // Format the events for the response
       let eventsList = events.map((event: any, index: number) => {
@@ -151,23 +176,35 @@ Event URL: ${eventUrl}
         const location = event.location?.displayName || "No location";
         const attendeeCount = event.attendees?.length || 0;
         
-        return `${index + 1}. ID: ${event.id}
-           Subject: ${event.subject}
-           Time: ${startTime} to ${endTime}
-           Location: ${location}
-           Attendees: ${attendeeCount}`;
+        return `${index + 1}. ${event.subject}
+   - When: ${startTime} to ${endTime}
+   - Location: ${location}
+   - Attendees: ${attendeeCount}
+   - Event ID: ${event.id}`;
       }).join("\n\n");
       
-      const successMessage = `
-Found ${events.length} calendar events:
+      // Create UI resource for visual display (using enriched events with photos)
+      const uiUrl = createEventsUIUrl(enrichedEvents);
+      const uiResource = createUIResource({
+        uri: "ui://outlook-meetings/upcoming-events",
+        content: { type: 'externalUrl', iframeUrl: uiUrl },
+        encoding: 'text',
+        uiMetadata: {
+          'preferred-frame-size': ['100%', '700px'],
+        },
+      });
+      
+      const successMessage = `Here are your upcoming meetings (interactive view):
+
+Summary (next events found: ${events.length})
 
 ${eventsList}
 
-You can use the event IDs above to get details, update, or delete specific events.
-                    `;
+Would you like me to open details for any meeting, reschedule or cancel one, or create a new meeting?`;
   
       return {
         content: [
+          uiResource,
           {
             type: "text",
             text: successMessage,
