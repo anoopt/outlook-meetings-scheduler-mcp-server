@@ -1,0 +1,90 @@
+# Nanobot MCP Client Configuration - stdio Transport Mode
+# This configuration runs the MCP server directly as a subprocess via stdio.
+# This is simpler as it requires only 2 terminals (UI server + nanobot).
+# For HTTP transport mode, see nanobot-http.yaml instead.
+
+agents:
+  outlook-agent:
+    name: Outlook Meetings Assistant
+    description: Your helpful assistant for managing Microsoft Outlook calendar meetings with modern UI
+    model: gpt-4o-mini
+    mcpServers:
+      - outlook
+    instructions: |
+      You are a friendly and efficient Outlook calendar assistant.
+      Help users manage their Microsoft Outlook meetings and calendar, including:
+      - Viewing upcoming meetings with interactive UI (use upcoming events resource)
+      - Finding colleagues' email addresses and contact information
+      - Creating calendar events and meetings
+      - Scheduling meetings with attendees
+      - Updating and managing existing events
+      - Deleting events when requested
+      
+      When users ask about their upcoming meetings, use the UI resource 
+      'ui://outlook-meetings/upcoming-events' to display a beautiful interactive view 
+      showing their upcoming meetings with full details (date, time, location, attendees).
+      
+      When users search for people, use the UI resource 
+      'ui://outlook-meetings/people/{query}' to show contact cards with detailed information.
+      
+      For scheduling meetings, you can:
+      - Use 'find-person' to look up email addresses by name
+      - Use 'create-event' for simple calendar events
+      - Use 'create-event-with-attendees' for meetings with multiple people
+      
+      Always be helpful, professional, and respect the user's calendar privacy.
+      Provide clear confirmations when events are created, updated, or deleted.
+
+mcpServers:
+  outlook:
+    # Command to run the MCP server directly via stdio
+    command: node
+    args:
+      - build/index.js
+    
+    # ============================================================================
+    # SETUP INSTRUCTIONS (stdio Transport Mode)
+    # ============================================================================
+    # 
+    # This configuration runs the MCP server directly via stdio transport.
+    # For HTTP transport mode (separate MCP server process), see nanobot-http.yaml
+    # 
+    # You need to run TWO processes:
+    # 
+    # 1. START THE UI SERVER (in a separate terminal):
+    #    $ cd ui-app
+    #    $ npm install
+    #    $ npm run dev
+    #    
+    #    The UI server must be running on the port specified in UI_SERVER_URL
+    #    (default: http://localhost:5173)
+    #    
+    #    For GitHub Codespaces, update UI_SERVER_URL in .env to use the 
+    #    forwarded port URL (e.g., https://your-codespace-name-5173.app.github.dev)
+    # 
+    # 2. BUILD THE MCP SERVER (before running nanobot):
+    #    $ npm run build
+    # 
+    # 3. START NANOBOT (loads environment from .env file):
+    #    
+    #    Local:
+    #    $ docker run -it --rm --network host \
+    #        -v $(pwd)/nanobot.yaml:/nanobot.yaml \
+    #        --env-file .env \
+    #        ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+    #    
+    #    GitHub Codespaces:
+    #    $ docker run -it --rm --network host \
+    #        -v /workspaces/outlook-meetings-scheduler-mcp-server/nanobot.yaml:/nanobot.yaml \
+    #        --env-file /workspaces/outlook-meetings-scheduler-mcp-server/.env \
+    #        ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+    #    
+    #    The --env-file flag loads all environment variables from .env:
+    #    - OPENAI_API_KEY (required by nanobot)
+    #    - AUTHENTICATION_MODE, TENANT_ID, CLIENT_ID, etc. (required by MCP server)
+    #    - UI_SERVER_URL (required for UI resources)
+    # 
+    # See .env.example for a sample environment file.
+    # Copy it to .env and fill in your credentials:
+    #    $ cp .env.example .env
+    # ============================================================================

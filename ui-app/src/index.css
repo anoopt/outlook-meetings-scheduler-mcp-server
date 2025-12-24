@@ -1,0 +1,20 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  font-family: 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', sans-serif;
+  background-color: #ffffff;
+  overflow-x: hidden;
+}
+
+body {
+  padding: 0;
+}
+
+#root {
+  background-color: #ffffff;
+}
+

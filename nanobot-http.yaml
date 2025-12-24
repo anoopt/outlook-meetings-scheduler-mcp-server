@@ -1,0 +1,100 @@
+# Nanobot MCP Client Configuration - HTTP Transport Mode
+# This configuration connects to the MCP server via HTTP/SSE transport.
+# Use this when you want to run the MCP server as a separate process.
+
+agents:
+  outlook-agent:
+    name: Outlook Meetings Assistant
+    description: Your helpful assistant for managing Microsoft Outlook calendar meetings with modern UI
+    model: gpt-5-mini
+    mcpServers:
+      - outlook
+    instructions: |
+      You are a friendly and efficient Outlook calendar assistant.
+      Help users manage their Microsoft Outlook meetings and calendar, including:
+      - Viewing upcoming meetings with interactive UI
+      - Finding colleagues' email addresses and contact information
+      - Creating calendar events and meetings
+      - Scheduling meetings with attendees
+      - Updating and managing existing events
+      - Deleting events when requested
+      
+      IMPORTANT: When users ask about their upcoming meetings or calendar:
+      - Use the 'list-events' tool to display a beautiful interactive view 
+        showing their upcoming meetings with full details (date, time, location, attendees).
+      - The tool will return a visual card with the events.
+      
+      When users search for people or ask to find someone:
+      - Use the 'find-person' tool to look up people by name.
+      - The tool will return a visual contact card with their details.
+      
+      For scheduling meetings, you can:
+      - Use 'find-person' to look up email addresses by name
+      - Use 'create-event' for simple calendar events
+      - Use 'create-event-with-attendees' for meetings with multiple people
+      
+      Always be helpful, professional, and respect the user's calendar privacy.
+      Provide clear confirmations when events are created, updated, or deleted.
+
+mcpServers:
+  outlook:
+    # Connect to externally running MCP server via HTTP/SSE
+    url: http://localhost:3000/mcp
+    
+    # ============================================================================
+    # SETUP INSTRUCTIONS (HTTP Transport Mode)
+    # ============================================================================
+    # 
+    # This configuration connects to an EXTERNAL MCP server that must be started
+    # separately. You need to run THREE processes:
+    # 
+    # 1. START THE UI SERVER (in a separate terminal):
+    #    $ cd ui-app
+    #    $ npm install
+    #    $ npm run dev
+    #    
+    #    The UI server must be running on the port specified in UI_SERVER_URL
+    #    (default: http://localhost:5173)
+    #    
+    #    For GitHub Codespaces, update UI_SERVER_URL in .env to use the 
+    #    forwarded port URL (e.g., https://your-codespace-name-5173.app.github.dev)
+    # 
+    # 2. START THE MCP SERVER (loads .env file automatically):
+    #    $ npm run build
+    #    $ npm start
+    #    
+    #    Alternative (load env manually):
+    #    $ set -a; source .env; set +a
+    #    $ node build/index-http.js
+    #    
+    #    CRITICAL: The MCP server MUST load the .env file for proper configuration!
+    #    
+    #    Required environment variables in .env:
+    #    - AUTHENTICATION_MODE (interactive or client_credentials)
+    #    - CLIENT_ID
+    #    - CLIENT_SECRET (if using client_credentials)
+    #    - TENANT_ID
+    #    - USER_EMAIL
+    #    - HTTP_PORT (default: 3000)
+    #    - UI_SERVER_URL (default: http://localhost:5173)
+    # 
+    # 3. START NANOBOT (in another terminal):
+    #    
+    #    Local:
+    #    $ docker run -it --rm --network host \
+    #        -v $(pwd)/nanobot-http.yaml:/nanobot.yaml \
+    #        --env-file .env \
+    #        ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+    #    
+    #    GitHub Codespaces:
+    #    $ docker run -it --rm --network host \
+    #        -v /workspaces/outlook-meetings-scheduler-mcp-server/nanobot-http.yaml:/nanobot.yaml \
+    #        --env-file /workspaces/outlook-meetings-scheduler-mcp-server/.env \
+    #        ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+    #    
+    #    Nanobot needs OPENAI_API_KEY (loaded via --env-file)
+    # 
+    # See .env.example for a sample environment file.
+    # Copy it to .env and fill in your credentials:
+    #    $ cp .env.example .env
+    # ============================================================================

@@ -2,14 +2,38 @@
 
 # Outlook Meetings Scheduler MCP Server
 
-MCP Server for scheduling meetings in Microsoft Outlook using Microsoft Graph API.
+MCP Server for scheduling meetings in Microsoft Outlook using Microsoft Graph API with **modern UI capabilities**.
 
-This MCP server allows you to create calendar events, create events with attendees (including finding their email addresses).
+This MCP server allows you to create calendar events, create events with attendees (including finding their email addresses), and view your calendar and contacts through beautiful interactive UIs built with **Fluent UI 2**.
 It integrates seamlessly with other MCP servers, such as the GitHub MCP server, to enhance your workflow.
 
 <a href="https://glama.ai/mcp/servers/@anoopt/outlook-meetings-scheduler-mcp-server">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@anoopt/outlook-meetings-scheduler-mcp-server/badge" alt="Outlook Meetings Scheduler Server MCP server" />
 </a>
+
+## ✨ New Features
+
+### Modern UI with Fluent UI 2
+
+This server now includes interactive UI resources that display your calendar events and contact information through a modern React web app using **Microsoft Fluent UI 2** - Microsoft's latest design system.
+
+**Upcoming Events View**  
+<img src="https://github.com/user-attachments/assets/b956b8fc-ea20-4154-bb5a-17c7c1ffed36" alt="Upcoming Events UI" width="600">
+
+*Features: Calendar events with date/time, location, attendee count, and clickable avatar groups showing attendee initials*
+
+**People Search Results**  
+<img src="https://github.com/user-attachments/assets/cef8a8de-0d11-47ea-8726-63843d303902" alt="People Card UI" width="600">
+
+*Features: Contact cards with colorful avatars, job titles, email, phone, department, and office location*
+
+### Flexible Transport Options
+
+The server supports **two transport modes**:
+- **stdio** (default): Simple setup, nanobot spawns the server automatically
+- **HTTP/SSE**: Standalone server using Hono framework for multiple clients and better hot reload
+
+See [Transport Modes](#transport-modes) for details.
 
 ## Sample queries
 
@@ -21,6 +45,74 @@ It integrates seamlessly with other MCP servers, such as the GitHub MCP server, 
 
 ## Demo
 ![Demo](./assets/demo.gif)
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+ installed
+- Azure AD credentials (see [Microsoft Graph API Setup](#microsoft-graph-api-setup))
+- OpenAI API key (for nanobot)
+- Docker (for running nanobot)
+
+### Setup Steps
+
+1. **Clone and build the project**:
+```bash
+git clone https://github.com/anoopt/outlook-meetings-scheduler-mcp-server.git
+cd outlook-meetings-scheduler-mcp-server
+npm install
+npm run build
+```
+
+2. **Configure environment variables**:
+```bash
+cp .env.example .env
+# Edit .env with your credentials (see .env.example for details)
+```
+
+Required variables:
+- `OPENAI_API_KEY` - Your OpenAI API key
+- `TENANT_ID` - Your Azure AD tenant ID
+- `CLIENT_ID` - Your Azure AD application ID
+- `AUTHENTICATION_MODE` - Choose: `interactive`, `client_credentials`, or `client_provided_token`
+- `UI_SERVER_URL` - React app URL (default: `http://localhost:5173`)
+- `HTTP_PORT` - HTTP server port (default: `3000`, only for HTTP mode)
+
+3. **Start the UI server** (required for UI resources):
+```bash
+cd ui-app
+npm install
+npm run dev
+```
+
+4. **Run with nanobot**:
+
+**stdio mode** (simpler, recommended):
+```bash
+docker run -it --rm --network host \
+  -v $(pwd)/nanobot.yaml:/nanobot.yaml \
+  --env-file .env \
+  ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+```
+
+**HTTP mode** (for multiple clients):
+```bash
+# In another terminal, start the MCP server
+npm start
+
+# Then run nanobot
+docker run -it --rm --network host \
+  -v $(pwd)/nanobot-http.yaml:/nanobot.yaml \
+  --env-file .env \
+  ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+```
+
+5. **Test the functionality**:
+- "Show me my upcoming events"
+- "Find person named John"
+- "Schedule a meeting tomorrow at 3 PM"
+
+For detailed testing instructions, see [TESTING_GUIDE.md](./TESTING_GUIDE.md).
 
 ## Tools
 
@@ -93,6 +185,142 @@ It integrates seamlessly with other MCP servers, such as the GitHub MCP server, 
      - `removeAttendees` (optional): Array of email addresses to remove from the event
    - Returns: Updated event attendee information
 
+## UI Resources
+
+The MCP server provides interactive visual UI resources using a React web app built with **Fluent UI 2** (Microsoft's latest design system). This replaces the previous inline HTML approach with a modern, accessible, and maintainable solution.
+
+### Available Resources
+
+1. **`ui://outlook-meetings/upcoming-events`**
+   - Displays upcoming calendar events for the next 7 days
+   - Modern card-based UI with Fluent UI 2 components
+   - Shows: event subject, date/time, location, attendee count
+   - Interactive and visually appealing presentation
+
+2. **`ui://outlook-meetings/people/{query}`**
+   - Displays people search results in card format
+   - Shows: name, job title, email, phone, department, office location
+   - Color-coded avatars with initials
+   - Clean, accessible design
+
+### Architecture
+
+The UI resources follow the MCP UI specification for external URL resources (iframeUrl):
+
+1. **React Web App** (`ui-app/`):
+   - Built with Vite + React + TypeScript
+   - Uses Fluent UI 2 components for modern, accessible design
+   - Receives data via URL query parameters (JSON-encoded)
+   - Two main routes: `/events` and `/people`
+
+2. **MCP Server**:
+   - Generates URLs pointing to the React app with embedded data
+   - Example: `http://localhost:5173/events?events=<encoded-data>`
+   - Returns `text/uri-list` MIME type following MCP spec
+
+### Running the UI Server
+
+The UI resources require the React web app to be running:
+
+```bash
+cd ui-app
+npm install
+npm run dev
+```
+
+By default, the UI server runs on `http://localhost:5173`. You can configure this with the `UI_SERVER_URL` environment variable.
+
+**For GitHub Codespaces:** Update `UI_SERVER_URL` in your `.env` file to use the forwarded port URL (e.g., `https://your-codespace-name-5173.app.github.dev`).
+
+### Benefits
+
+- ✅ **Modern Design**: Uses Fluent UI 2, Microsoft's latest design system
+- ✅ **Better Maintainability**: React components vs inline HTML strings
+- ✅ **Type Safety**: Full TypeScript support throughout
+- ✅ **Accessible**: WCAG-compliant Fluent UI 2 components
+- ✅ **MCP Compliant**: Follows external URL (iframeUrl) specification
+
+## Transport Modes
+
+The MCP server supports **two transport modes** for different use cases:
+
+### 1. stdio Transport (Default) - Recommended for Testing
+
+The server runs as a subprocess spawned by the MCP client (e.g., nanobot). This is the simplest setup.
+
+**Advantages:**
+- ✅ Simpler setup - only 2 terminals needed
+- ✅ Automatic server lifecycle management
+- ✅ Environment variables passed automatically
+- ✅ Ideal for development and testing
+
+**Configuration**: Use `nanobot.yaml`
+
+**Usage**:
+```bash
+# Terminal 1: Start UI server
+cd ui-app && npm run dev
+
+# Terminal 2: Start nanobot (spawns MCP server automatically)
+docker run -it --rm --network host \
+  -v $(pwd)/nanobot.yaml:/nanobot.yaml \
+  --env-file .env \
+  ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+```
+
+### 2. HTTP/SSE Transport - For Production/Multiple Clients
+
+The server runs as a standalone HTTP service. The MCP client connects to it via HTTP. This allows the server to run independently and supports multiple concurrent clients.
+
+**Advantages:**
+- ✅ Supports multiple concurrent clients
+- ✅ Server runs independently of client
+- ✅ Better hot reload experience (using Hono framework)
+- ✅ Can be deployed as a service
+
+**Framework**: [Hono](https://hono.dev/) - A modern, lightweight web framework (~12KB vs Express's ~200KB)
+
+**Why Hono?**
+- **Lightweight**: ~12KB bundle size (vs 200KB for Express)
+- **Better Hot Reload**: Cleaner reconnections when making code changes
+- **Type-Safe**: Built-in TypeScript support with type inference
+- **Multi-Runtime**: Works on Node.js, Cloudflare Workers, Deno, Bun
+
+**Configuration**: Use `nanobot-http.yaml`
+
+**Usage**:
+```bash
+# Terminal 1: Start UI server
+cd ui-app && npm run dev
+
+# Terminal 2: Start MCP HTTP server
+npm run build
+npm start
+
+# Terminal 3: Start nanobot (connects to HTTP server)
+docker run -it --rm --network host \
+  -v $(pwd)/nanobot-http.yaml:/nanobot.yaml \
+  --env-file .env \
+  ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+```
+
+**Server Details:**
+- Runs on port 3000 by default (configurable via `HTTP_PORT` environment variable)
+- MCP endpoint: `http://localhost:3000/mcp`
+- Health check: `http://localhost:3000/health`
+- Graceful logging fallback when no client is connected
+
+### Choosing the Right Mode
+
+| Feature | stdio Mode | HTTP Mode |
+|---------|-----------|-----------|
+| Setup Complexity | Simple (2 terminals) | Moderate (3 terminals) |
+| Multiple Clients | ❌ Single client only | ✅ Multiple concurrent clients |
+| Hot Reload | Good | Excellent (with Hono) |
+| Production Ready | ✅ Yes | ✅ Yes |
+| Independent Server | ❌ No | ✅ Yes |
+| Best For | Development, Testing | Production, Multiple Clients |
+
 ## Setup
 
 ### Authentication Modes
@@ -136,19 +364,72 @@ Best for: Custom token management, pre-acquired tokens
 4. Grant admin consent for your organization
 5. Note your Client ID, Client Secret, and Tenant ID
 
+### Environment Configuration
+
+The server uses a `.env` file for configuration. Create one from the example:
+
+```bash
+cp .env.example .env
+```
+
+**Required Variables:**
+
+```bash
+# OpenAI API Key (required by nanobot)
+OPENAI_API_KEY=your-openai-api-key-here
+
+# Authentication Mode
+# Options: interactive, client_credentials, client_provided_token
+AUTHENTICATION_MODE=interactive
+
+# Azure AD Configuration
+TENANT_ID=your-tenant-id-here
+CLIENT_ID=your-client-id-here
+
+# Only needed for client_credentials mode
+CLIENT_SECRET=your-client-secret-here
+
+# User Email (required for some operations)
+USER_EMAIL=your-email@example.com
+
+# HTTP Server Port (for HTTP transport mode)
+# Default: 3000
+HTTP_PORT=3000
+
+# UI Server URL
+# Default: http://localhost:5173
+# For Codespaces, use: https://your-codespace-name-5173.app.github.dev
+UI_SERVER_URL=http://localhost:5173
+```
+
+**Backward Compatibility**: If `AUTHENTICATION_MODE` is not specified, the server automatically detects:
+- `CLIENT_SECRET` present → `client_credentials` mode
+- `ACCESS_TOKEN` present → `client_provided_token` mode
+- Neither present → `interactive` mode (default)
+
+### Nanobot Configuration
+
+Two configuration files are provided:
+- **`nanobot.yaml`** - For stdio transport mode (simpler setup)
+- **`nanobot-http.yaml`** - For HTTP transport mode (multiple clients)
+
+Both configurations:
+- Load environment variables via `--env-file` flag
+- Include agent instructions for using UI resources
+- Provide comprehensive setup documentation in comments
+
+**Key differences:**
+- stdio mode: Nanobot spawns the MCP server as a subprocess
+- HTTP mode: Nanobot connects to a separately running MCP server on port 3000
+
 ### Usage with VS Code
 
 #### Authentication Mode Configuration
 
-The MCP server supports different authentication modes via the `AUTH_MODE` environment variable:
+The MCP server supports different authentication modes via the `AUTHENTICATION_MODE` environment variable:
 - `interactive` (default) - User authentication with browser or device code flow  
 - `client_credentials` - App-only authentication with client secret
 - `client_provided_token` - Use a pre-acquired token
-
-**Backward Compatibility**: If `AUTH_MODE` is not specified, the server automatically detects the mode:
-- Presence of `CLIENT_SECRET` → `client_credentials` mode
-- Presence of `ACCESS_TOKEN` → `client_provided_token` mode  
-- Neither present → `interactive` mode (default)
 
 #### Local Node.js
 
@@ -761,12 +1042,58 @@ curl -X POST \
 # Install dependencies
 npm install
 
-# Build the project
+# Build the MCP server
 npm run build
+
+# Build the UI app
+npm run build:ui
+
+# Build both MCP server and UI app
+npm run build:all
 
 # Docker build
 docker build -t mcp/outlook-meetings-scheduler .
 ```
+
+## Testing with Nanobot
+
+You can test the MCP server and UI resources using [nanobot.ai](https://nanobot.ai) as an MCP client.
+
+### Prerequisites
+
+1. Build the MCP server: `npm run build`
+2. Start the UI server: `npm run dev:ui` (in a separate terminal)
+3. Configure your environment variables in `.env` (use `.env.example` as a template)
+
+### Running with Nanobot
+
+#### Local Machine
+
+```bash
+docker run -it --rm --network host \
+  -v $(pwd)/nanobot.yaml:/nanobot.yaml \
+  --env-file .env \
+  ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+```
+
+#### GitHub Codespaces
+
+```bash
+docker run -it --rm --network host \
+  -v /workspaces/outlook-meetings-scheduler-mcp-server/nanobot.yaml:/nanobot.yaml \
+  --env-file /workspaces/outlook-meetings-scheduler-mcp-server/.env \
+  ghcr.io/nanobot-ai/nanobot:latest run /nanobot.yaml
+```
+
+**Note:** In GitHub Codespaces, you'll need to update `UI_SERVER_URL` in your `.env` file to use the forwarded port URL (e.g., `https://your-codespace-name-5173.app.github.dev`).
+
+### Testing UI Resources
+
+Once nanobot is running, you can test the UI resources:
+
+1. Ask nanobot to access the resource: `ui://outlook-meetings/upcoming-events`
+2. Nanobot will display the UI with your upcoming calendar events
+3. Test the people search UI: `ui://outlook-meetings/people/John`
 
 ## License
 

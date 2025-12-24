@@ -13,5 +13,6 @@ export const DEFAULT_CLIENT_ID = "ca696137-503f-4489-bdf4-7cb76e272639";
 // Default tenant ID (common for multi-tenant)
 export const DEFAULT_TENANT_ID = "common";
 
-// Default redirect URI for local interactive auth (no port required)
+// Default redirect URI - Note: InteractiveBrowserCredential in Node.js 
+// creates its own temporary server, so this is not actually used
 export const DEFAULT_REDIRECT_URI = "http://localhost";

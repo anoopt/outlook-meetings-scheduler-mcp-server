@@ -6,7 +6,11 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc && chmod 755 build/*.js"
+    "build": "tsc && chmod 755 build/*.js",
+    "start": "node build/index-http.js",
+    "build:ui": "cd ui-app && npm install && npm run build",
+    "dev:ui": "cd ui-app && npm install && npm run dev",
+    "build:all": "npm run build && npm run build:ui"
   },
   "bin": {
     "outlook-meetings-scheduler": "./build/index.js"
@@ -20,9 +24,12 @@
   "dependencies": {
     "@azure/identity": "^4.12.0",
     "@azure/identity-cache-persistence": "^1.2.0",
+    "@hono/node-server": "^1.19.7",
+    "@mcp-ui/server": "^5.16.3",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@modelcontextprotocol/sdk": "^1.10.1",
     "date-fns": "^4.1.0",
+    "hono": "^4.11.1",
     "jsonwebtoken": "^9.0.2",
     "zod": "^3.24.3"
   },

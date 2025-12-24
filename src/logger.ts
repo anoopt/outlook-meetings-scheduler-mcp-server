@@ -20,6 +20,13 @@ export function initializeLogger(server: Server) {
   serverInstance = server;
 }
 
+// Helper to check if server is actually connected to a client
+function isServerConnected(): boolean {
+  // In HTTP mode, the server might exist but not be connected to a client
+  // We'll catch errors and fall back to console logging
+  return serverInstance !== null;
+}
+
 export const logger = {
   info(message: string, data?: unknown) {
     const logMessage = formatMessage(
@@ -28,15 +35,18 @@ export const logger = {
       data,
     );
     
-    // Send notification to MCP server if available
-    if (serverInstance) {
+    // Try sending notification to MCP server if available
+    if (isServerConnected() && serverInstance) {
       serverInstance.notification({
         method: "notifications/message",
         params: {
           level: "info",
           data: message + (data ? `: ${JSON.stringify(data)}` : ""),
         },
-      }).catch(err => console.error("Failed to send notification:", err));
+      }).catch(() => {
+        // Silently fall back to console if not connected
+        console.log(logMessage);
+      });
     } else {
       console.log(logMessage);
     }
@@ -48,15 +58,18 @@ export const logger = {
       message,
       data,
     );
-    // Send notification to MCP server if available
-    if (serverInstance) {
+    // Try sending notification to MCP server if available
+    if (isServerConnected() && serverInstance) {
       serverInstance.notification({
         method: "notifications/message",
         params: {
           level: "progress",
           data: message + (data ? `: ${JSON.stringify(data)}` : ""),
         },
-      }).catch(err => console.error("Failed to send notification:", err));
+      }).catch(() => {
+        // Silently fall back to console if not connected
+        console.log(logMessage);
+      });
     } else {
       console.log(logMessage);
     }
@@ -69,15 +82,18 @@ export const logger = {
       error,
     );
     
-    // Send notification to MCP server if available
-    if (serverInstance) {
+    // Try sending notification to MCP server if available
+    if (isServerConnected() && serverInstance) {
       serverInstance.notification({
         method: "notifications/message",
         params: {
           level: "error",
           data: message + (error instanceof Error ? `: ${error.message}` : error ? `: ${JSON.stringify(error)}` : ""),
         },
-      }).catch(err => console.error("Failed to send notification:", err));
+      }).catch(() => {
+        // Silently fall back to console if not connected
+        console.error(logMessage);
+      });
     } else {
       console.error(logMessage);
     }
