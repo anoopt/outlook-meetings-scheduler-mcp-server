@@ -18,10 +18,14 @@ It integrates seamlessly with other MCP servers, such as the GitHub MCP server, 
 This server now includes interactive UI resources that display your calendar events and contact information through a modern React web app using **Microsoft Fluent UI 2** - Microsoft's latest design system.
 
 **Upcoming Events View**  
-<img src="https://github.com/user-attachments/assets/0ae03e15-6572-4a61-8c27-21ecc06c19ea" alt="Upcoming Events UI" width="600">
+<img src="https://github.com/user-attachments/assets/b956b8fc-ea20-4154-bb5a-17c7c1ffed36" alt="Upcoming Events UI" width="600">
+
+*Features: Calendar events with date/time, location, attendee count, and clickable avatar groups showing attendee initials*
 
 **People Search Results**  
-<img src="https://github.com/user-attachments/assets/7ca4b182-90c6-42a2-80f3-1b2533905bdd" alt="People Card UI" width="600">
+<img src="https://github.com/user-attachments/assets/cef8a8de-0d11-47ea-8726-63843d303902" alt="People Card UI" width="600">
+
+*Features: Contact cards with colorful avatars, job titles, email, phone, department, and office location*
 
 ### Flexible Transport Options
 
