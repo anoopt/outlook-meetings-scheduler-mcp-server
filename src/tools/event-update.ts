@@ -31,7 +31,7 @@ export function registerEventUpdateTools(server: McpServer): void {
       ).optional().describe("List of attendees to add or update for the event"),
     },
     async ({ eventId, subject, body, start, end, timeZone, location, attendees }) => {
-      const { graph, userEmail, authError } = await getGraphConfig();
+      const { graph, userId, authError } = await getGraphConfig();
 
       if (authError) {
         return {
@@ -76,7 +76,7 @@ export function registerEventUpdateTools(server: McpServer): void {
       // Handle attendees if provided
       if (attendees && attendees.length > 0) {
         // First get the current event to merge with existing attendees
-        const currentEvent = await graph.getEvent(eventId, userEmail);
+        const currentEvent = await graph.getEvent(eventId, userId);
         
         if (!currentEvent || !currentEvent.attendees) {
           // If no current attendees, just use the new ones
@@ -115,8 +115,8 @@ export function registerEventUpdateTools(server: McpServer): void {
       }
   
       // First get the current event to show what's being updated
-      const currentEvent = await graph.getEvent(eventId, userEmail);
-      
+      const currentEvent = await graph.getEvent(eventId, userId);
+
       if (!currentEvent) {
         return {
           content: [
@@ -127,9 +127,9 @@ export function registerEventUpdateTools(server: McpServer): void {
           ],
         };
       }
-      
+
       // Call the Graph API to update the event
-      const result = await graph.updateEvent(eventId, eventUpdates, userEmail);
+      const result = await graph.updateEvent(eventId, eventUpdates, userId);
       
       if (!result) {
         return {
@@ -185,16 +185,16 @@ Event URL: ${eventUrl}
       ).optional().describe("List of email addresses to remove from the event"),
     },
     async ({ eventId, addAttendees, removeAttendees }) => {
-      const { graph, userEmail, authError } = await getGraphConfig();
+      const { graph, userId, authError } = await getGraphConfig();
 
       if (authError) {
         return {
           content: [{ type: "text", text: `🔐 Authentication Required\n\n${authError}\n\nPlease complete the authentication and try again.` }]
         };
       }
-  
+
       // First get the current event to get existing attendees
-      const currentEvent = await graph.getEvent(eventId, userEmail);
+      const currentEvent = await graph.getEvent(eventId, userId);
       
       if (!currentEvent) {
         return {
@@ -264,9 +264,9 @@ Event URL: ${eventUrl}
         const eventUpdates: Partial<Event> = {
           attendees: updatedAttendees
         };
-        
+
         // Call the Graph API to update the event
-        const result = await graph.updateEvent(eventId, eventUpdates, userEmail);
+        const result = await graph.updateEvent(eventId, eventUpdates, userId);
         
         if (!result) {
           return {

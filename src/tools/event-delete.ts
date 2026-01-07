@@ -16,17 +16,17 @@ export function registerEventDeleteTools(server: McpServer): void {
       eventId: z.string().describe("ID of the event to delete"),
     },
     async ({ eventId }) => {
-      const { graph, userEmail, authError } = await getGraphConfig();
+      const { graph, userId, authError } = await getGraphConfig();
 
       if (authError) {
         return {
           content: [{ type: "text", text: `🔐 Authentication Required\n\n${authError}\n\nPlease complete the authentication and try again.` }]
         };
       }
-  
+
       // First get the event details to confirm what's being deleted
-      const event = await graph.getEvent(eventId, userEmail);
-      
+      const event = await graph.getEvent(eventId, userId);
+
       if (!event) {
         return {
           content: [
@@ -37,9 +37,9 @@ export function registerEventDeleteTools(server: McpServer): void {
           ],
         };
       }
-      
+
       // Delete the event
-      const success = await graph.deleteEvent(eventId, userEmail);
+      const success = await graph.deleteEvent(eventId, userId);
       
       if (!success) {
         return {

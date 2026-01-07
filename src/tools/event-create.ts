@@ -22,19 +22,19 @@ export function registerEventCreateTools(server: McpServer): void {
       timeZone: z.string().optional().describe("Time zone for the event. Defaults to GMT Standard Time"),
     },
     async ({ subject, body, start, end, timeZone = "GMT Standard Time" }) => {
-      const { graph, userEmail, authError } = await getGraphConfig();
+      const { graph, userEmail, userId, authError } = await getGraphConfig();
 
       if (authError) {
         return {
           content: [{ type: "text", text: `🔐 Authentication Required\n\n${authError}\n\nPlease complete the authentication and try again.` }]
         };
       }
-  
+
       // Calculate default times if not provided
       const nextDay: string = format(addBusinessDays(new Date(), 1), 'yyyy-MM-dd');
       const startTime: string = start ? start : `${nextDay}T12:00:00`;
       const endTime: string = end ? end : `${nextDay}T13:00:00`;
-  
+
       // Create the event object
       const event: Event = {
         subject,
@@ -51,9 +51,9 @@ export function registerEventCreateTools(server: McpServer): void {
           timeZone
         }
       };
-  
+
       // Call the Graph API to create the event
-      const result = await graph.createEvent(event, userEmail);
+      const result = await graph.createEvent(event, userId);
       
       if (!result) {
         return {
@@ -113,19 +113,19 @@ Event URL: ${eventUrl}
       ).describe("List of attendees for the event")
     },
     async ({ subject, body, start, end, timeZone = "GMT Standard Time", location, attendees }) => {
-      const { graph, userEmail, authError } = await getGraphConfig();
+      const { graph, userEmail, userId, authError } = await getGraphConfig();
 
       if (authError) {
         return {
           content: [{ type: "text", text: `🔐 Authentication Required\n\n${authError}\n\nPlease complete the authentication and try again.` }]
         };
       }
-  
+
       // Calculate default times if not provided
       const nextDay: string = format(addBusinessDays(new Date(), 1), 'yyyy-MM-dd');
       const startTime: string = start ? start : `${nextDay}T12:00:00`;
       const endTime: string = end ? end : `${nextDay}T13:00:00`;
-  
+
       // Format attendees for the event
       const formattedAttendees: Attendee[] = attendees.map((attendee: any) => ({
         emailAddress: {
@@ -159,9 +159,9 @@ Event URL: ${eventUrl}
           displayName: location
         };
       }
-  
+
       // Call the Graph API to create the event
-      const result = await graph.createEvent(event, userEmail);
+      const result = await graph.createEvent(event, userId);
       
       if (!result) {
         return {

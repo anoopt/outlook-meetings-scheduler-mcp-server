@@ -113,35 +113,47 @@ async function initializeAuth(): Promise<{ authManager: AuthManager; graph: Grap
 export async function getGraphConfig() {
   const authModeStr = process.env.AUTH_MODE || "interactive";
   const authMode = authModeStr as AuthMode;
-  
+
   // For client_credentials mode, USER_EMAIL is required
   // For interactive mode, we'll get the email from the authenticated user
   let userEmail = process.env.USER_EMAIL || "";
+  let userId = process.env.USER_ID || "";
   
   try {
     const { authManager, graph } = await initializeAuth();
     
-    // If interactive mode and no USER_EMAIL specified, get it from the authenticated user
-    if (authMode === AuthMode.Interactive && !userEmail) {
+    // If interactive mode and no USER_ID/USER_EMAIL specified, get them from the authenticated user
+    if (authMode === AuthMode.Interactive && (!userEmail || !userId)) {
       try {
         // Get the authenticated user's profile
         const credential = authManager.getAzureCredential();
         const token = await credential.getToken("https://graph.microsoft.com/.default");
-        
+
         if (token) {
           // Create a temporary client to get user info
           const Client = (await import("@microsoft/microsoft-graph-client")).Client;
           const tempClient = Client.initWithMiddleware({
             authProvider: authManager.getGraphAuthProvider()
           });
-          
-          const user = await tempClient.api('/me').select('mail,userPrincipalName').get();
-          userEmail = user.mail || user.userPrincipalName;
-          logger.info(`✅ Using authenticated user email: ${userEmail}`);
+
+          const user = await tempClient.api('/me').select('id,mail,userPrincipalName,otherMails').get();
+          logger.info(`User profile response: ${JSON.stringify(user)}`);
+
+          if (!userId) {
+            userId = user.id;
+            logger.info(`✅ Using authenticated user ID: ${userId}`);
+          }
+
+          if (!userEmail) {
+            userEmail = user.mail
+              || (user.otherMails && user.otherMails.length > 0 ? user.otherMails[0] : null)
+              || user.userPrincipalName;
+            logger.info(`✅ Using authenticated user email: ${userEmail}`);
+          }
         }
       } catch (error: any) {
-        logger.error("Failed to get authenticated user email", error);
-        throw new Error("Failed to determine user email. Please set USER_EMAIL environment variable.");
+        logger.error("Failed to get authenticated user profile", error);
+        throw new Error("Failed to determine user ID/email. Please set USER_ID and USER_EMAIL environment variables.");
       }
     }
     
@@ -150,13 +162,14 @@ export async function getGraphConfig() {
       throw new Error("USER_EMAIL environment variable is required for client_credentials mode");
     }
     
-    return { graph, userEmail, authManager, authError: null };
+    return { graph, userEmail, userId, authManager, authError: null };
   } catch (error: any) {
     // Return the error so tools can handle it gracefully
-    return { 
-      graph: null as any, 
-      userEmail: userEmail || "", 
-      authManager: null as any, 
+    return {
+      graph: null as any,
+      userEmail: userEmail || "",
+      userId: userId || "",
+      authManager: null as any,
       authError: error.message || String(error)
     };
   }

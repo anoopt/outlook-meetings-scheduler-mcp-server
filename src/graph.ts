@@ -12,14 +12,14 @@ export default class Graph {
         this.authManager = authManager;
     }
 
-    async createEvent(event: Event, userEmail: string): Promise<any> {
+    async createEvent(event: Event, userId: string): Promise<any> {
         const client: Client | null = await this.getClient();
 
         if (client) {
             logger.progress("⌛ Creating event...");
             try {
                 const result: any = await client
-                    .api(`/users/${userEmail}/calendar/events`)
+                    .api(`/users/${userId}/calendar/events`)
                     .post(event);
 
                 if (result) {
@@ -36,7 +36,7 @@ export default class Graph {
         return null;
     };
 
-    async searchPeople(searchTerm: string, userEmail: string): Promise<any> {
+    async searchPeople(searchTerm: string, userId: string): Promise<any> {
         const client: Client | null = await this.getClient();
 
         if (client) {
@@ -44,7 +44,7 @@ export default class Graph {
             try {
                 // Try the /people endpoint first as it's most likely to have recent contacts
                 const peopleResult = await client
-                    .api(`/users/${userEmail}/people`)
+                    .api(`/users/${userId}/people`)
                     .search(`"${searchTerm}"`)
                     .get();
 
@@ -77,14 +77,14 @@ export default class Graph {
         return null;
     };
 
-    async getEvent(eventId: string, userEmail: string): Promise<any> {
+    async getEvent(eventId: string, userId: string): Promise<any> {
         const client: Client | null = await this.getClient();
 
         if (client) {
             logger.progress(`⌛ Getting event with ID ${eventId}...`);
             try {
                 const result: any = await client
-                    .api(`/users/${userEmail}/calendar/events/${eventId}`)
+                    .api(`/users/${userId}/calendar/events/${eventId}`)
                     .get();
 
                 if (result) {
@@ -101,14 +101,14 @@ export default class Graph {
         return null;
     };
 
-    async updateEvent(eventId: string, eventUpdates: Partial<Event>, userEmail: string): Promise<any> {
+    async updateEvent(eventId: string, eventUpdates: Partial<Event>, userId: string): Promise<any> {
         const client: Client | null = await this.getClient();
 
         if (client) {
             logger.progress(`⌛ Updating event with ID ${eventId}...`);
             try {
                 const result: any = await client
-                    .api(`/users/${userEmail}/calendar/events/${eventId}`)
+                    .api(`/users/${userId}/calendar/events/${eventId}`)
                     .update(eventUpdates);
 
                 if (result) {
@@ -125,14 +125,14 @@ export default class Graph {
         return null;
     };
 
-    async deleteEvent(eventId: string, userEmail: string): Promise<boolean> {
+    async deleteEvent(eventId: string, userId: string): Promise<boolean> {
         const client: Client | null = await this.getClient();
 
         if (client) {
             logger.progress(`⌛ Deleting event with ID ${eventId}...`);
             try {
                 await client
-                    .api(`/users/${userEmail}/calendar/events/${eventId}`)
+                    .api(`/users/${userId}/calendar/events/${eventId}`)
                     .delete();
 
                 logger.info("✅ Event deleted");
@@ -145,13 +145,13 @@ export default class Graph {
         return false;
     };
 
-    async listEvents(userEmail: string, params: {startDateTime?: string, endDateTime?: string, filter?: string, top?: number, subject?: string} = {}): Promise<any> {
+    async listEvents(userId: string, params: {startDateTime?: string, endDateTime?: string, filter?: string, top?: number, subject?: string} = {}): Promise<any> {
         const client: Client | null = await this.getClient();
 
         if (client) {
             logger.progress("⌛ Listing calendar events...");
             try {
-                let request = client.api(`/users/${userEmail}/calendar/events`);
+                let request = client.api(`/users/${userId}/calendar/events`);
                 
                 // Apply query parameters if provided
                 if (params.startDateTime && params.endDateTime) {
