@@ -16,16 +16,16 @@ export function registerEventReadTools(server: McpServer): void {
       eventId: z.string().describe("ID of the event to retrieve"),
     },
     async ({ eventId }) => {
-      const { graph, userEmail, authError } = await getGraphConfig();
+      const { graph, userEmail, userId, authError } = await getGraphConfig();
 
       if (authError) {
         return {
           content: [{ type: "text", text: `🔐 Authentication Required\n\n${authError}\n\nPlease complete the authentication and try again.` }]
         };
       }
-  
+
       // Retrieve the event
-      const event = await graph.getEvent(eventId, userEmail);
+      const event = await graph.getEvent(eventId, userId);
       
       if (!event) {
         return {
@@ -94,14 +94,14 @@ Event URL: ${eventUrl}
       maxResults: z.number().optional().describe("Maximum number of events to return"),
     },
     async ({ subject, startDate, endDate, maxResults }) => {
-      const { graph, userEmail, authError } = await getGraphConfig();
+      const { graph, userId, authError } = await getGraphConfig();
 
       if (authError) {
         return {
           content: [{ type: "text", text: `🔐 Authentication Required\n\n${authError}\n\nPlease complete the authentication and try again.` }]
         };
       }
-  
+
       // Set up parameters for listing events
       const params: any = {};
       if (subject) {
@@ -116,9 +116,9 @@ Event URL: ${eventUrl}
       if (maxResults) {
         params.top = maxResults;
       }
-  
+
       // Call the Graph API to list events
-      const result = await graph.listEvents(userEmail, params);
+      const result = await graph.listEvents(userId, params);
       
       if (!result || !result.value) {
         return {

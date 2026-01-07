@@ -15,7 +15,7 @@ export function registerPeopleTools(server: McpServer): void {
       name: z.string().describe("Name or partial name of the person to find"),
     },
     async ({ name }) => {
-      const { graph, userEmail, authError } = await getGraphConfig();
+      const { graph, userId, authError } = await getGraphConfig();
 
       // Check for authentication errors
       if (authError) {
@@ -30,7 +30,7 @@ export function registerPeopleTools(server: McpServer): void {
       }
 
       // Search for the person by name
-      const people = await graph.searchPeople(name, userEmail);
+      const people = await graph.searchPeople(name, userId);
       
       if (!people) {
         return {
